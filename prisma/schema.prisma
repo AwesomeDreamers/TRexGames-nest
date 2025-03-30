@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model BOARD {
+  board_id   BigInt    @id
+  member_id  BigInt
+  title      String?   @db.VarChar(200)
+  contents   String?
+  category   String?   @db.VarChar(45)
+  created_at DateTime? @db.Timestamp(6)
+  MEMBER     MEMBER    @relation(fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_MEMBER_TO_BOARD_1")
+  IMAGE      IMAGE[]
+}
+
+model CART {
+  cart_id   BigInt @id
+  shop_id   BigInt
+  member_id BigInt
+  cart_cnt  Int?
+  MEMBER    MEMBER @relation(fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_MEMBER_TO_CART_1")
+  SHOP      SHOP   @relation(fields: [shop_id], references: [shop_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_SHOP_TO_CART_1")
+}
+
+model CATEGORY {
+  category_id     BigInt     @id
+  sub_category_id BigInt
+  category        String?    @db.VarChar(45)
+  CATEGORY        CATEGORY   @relation("CATEGORYToCATEGORY", fields: [sub_category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_CATEGORY_TO_CATEGORY_1")
+  other_CATEGORY  CATEGORY[] @relation("CATEGORYToCATEGORY")
+  SHOP            SHOP[]
+}
+
+model IMAGE {
+  image_id   BigInt  @id
+  shop_id    BigInt
+  board_id   BigInt
+  image_sort String? @db.VarChar(45)
+  image      String?
+  BOARD      BOARD   @relation(fields: [board_id], references: [board_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_BOARD_TO_IMAGE_1")
+  SHOP       SHOP    @relation(fields: [shop_id], references: [shop_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_SHOP_TO_IMAGE_1")
+}
+
+model MEMBER {
+  member_id   BigInt     @id
+  role_id     BigInt
+  email       String?    @db.VarChar(100)
+  password    String?    @db.VarChar(100)
+  name        String?    @db.VarChar(45)
+  profile_url String?
+  BOARD       BOARD[]
+  CART        CART[]
+  ROLE        ROLE       @relation(fields: [role_id], references: [role_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_ROLE_TO_MEMBER_1")
+  ORDER       ORDER[]
+  REVIEW      REVIEW[]
+  WISTLIST    WISTLIST[]
+}
+
+model ORDER {
+  order_id    BigInt      @id
+  shop_id     BigInt
+  member_id   BigInt
+  payment     String?     @db.VarChar(45)
+  total_price Int?
+  created_at  DateTime?   @db.Timestamp(6)
+  MEMBER      MEMBER      @relation(fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_MEMBER_TO_ORDER_1")
+  SHOP        SHOP        @relation(fields: [shop_id], references: [shop_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_SHOP_TO_ORDER_1")
+  ORDER_LOG   ORDER_LOG[]
+}
+
+model ORDER_LOG {
+  order_log_id BigInt    @id
+  order_id     BigInt
+  create_at    DateTime? @db.Timestamp(6)
+  ORDER        ORDER     @relation(fields: [order_id], references: [order_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_ORDER_TO_ORDER_LOG_1")
+}
+
+model REVIEW {
+  review_id      BigInt  @id
+  shop_id        BigInt
+  member_id      BigInt
+  review_content String?
+  MEMBER         MEMBER  @relation(fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_MEMBER_TO_REVIEW_1")
+  SHOP           SHOP    @relation(fields: [shop_id], references: [shop_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_SHOP_TO_REVIEW_1")
+}
+
+model ROLE {
+  role_id BigInt   @id
+  role    String?  @db.VarChar(10)
+  MEMBER  MEMBER[]
+}
+
+model SEARCH {
+  sort_id     BigInt       @id
+  search_word String?
+  search_sort String?      @db.VarChar(45)
+  SEARCH_LOG  SEARCH_LOG[]
+}
+
+model SEARCH_LOG {
+  search_id  BigInt    @id
+  sort_id    BigInt
+  created_at DateTime? @db.Timestamp(6)
+  edit_at    DateTime? @db.Timestamp(6)
+  SEARCH     SEARCH    @relation(fields: [sort_id], references: [sort_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_SEARCH_TO_SEARCH_LOG_1")
+}
+
+model SHOP {
+  shop_id       BigInt     @id
+  category_id   BigInt
+  product_name  String?    @db.VarChar(45)
+  product_price Int?
+  product_qnt   Int?
+  product_desc  String?
+  created_at    DateTime?  @db.Timestamp(6)
+  edit_at       DateTime?  @db.Timestamp(6)
+  sale          Int?
+  CART          CART[]
+  IMAGE         IMAGE[]
+  ORDER         ORDER[]
+  REVIEW        REVIEW[]
+  CATEGORY      CATEGORY   @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_CATEGORY_TO_SHOP_1")
+  WISTLIST      WISTLIST[]
+}
+
+model WISTLIST {
+  wishlist_id BigInt @id
+  shop_id     BigInt
+  member_id   BigInt
+  MEMBER      MEMBER @relation(fields: [member_id], references: [member_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_MEMBER_TO_WISTLIST_1")
+  SHOP        SHOP   @relation(fields: [shop_id], references: [shop_id], onDelete: NoAction, onUpdate: NoAction, map: "FK_SHOP_TO_WISTLIST_1")
+}

@@ -8,8 +8,8 @@ datasource db {
 }
 
 model Board {
-  id        BigInt   @id @default(autoincrement())
-  memberId  BigInt
+  id        Int      @id @default(autoincrement())
+  memberId  Int
   title     String
   contents  String
   category  String
@@ -19,31 +19,31 @@ model Board {
 }
 
 model Cart {
-  id        BigInt  @id @default(autoincrement())
-  productId BigInt
-  memberId  BigInt
+  id        Int     @id @default(autoincrement())
+  productId Int
+  memberId  Int
   qty       Int
   member    Member  @relation(fields: [memberId], references: [id], map: "FK_MEMBER_TO_CART_1")
   product   Product @relation(fields: [productId], references: [id], map: "FK_SHOP_TO_CART_1")
 }
 
 model Category {
-  id       BigInt    @id @default(autoincrement())
+  id       Int       @id @default(autoincrement())
   category String
   product  Product[]
 }
 
 model Image {
-  id        BigInt  @id @default(autoincrement())
-  productId BigInt
-  boardId   BigInt
+  id        Int     @id @default(autoincrement())
+  productId Int
+  boardId   Int
   image     String?
   board     Board   @relation(fields: [boardId], references: [id], map: "FK_BOARD_TO_IMAGE_1")
   product   Product @relation(fields: [productId], references: [id], map: "FK_SHOP_TO_IMAGE_1")
 }
 
 model Member {
-  id          BigInt     @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   email       String     @unique
   password    String
   name        String
@@ -57,9 +57,9 @@ model Member {
 }
 
 model Order {
-  id        BigInt     @id @default(autoincrement())
-  productId BigInt
-  memberId  BigInt
+  id        Int        @id @default(autoincrement())
+  productId Int
+  memberId  Int
   payment   String?
   total     Int
   createdAt DateTime   @default(now())
@@ -69,39 +69,39 @@ model Order {
 }
 
 model OrderLog {
-  id        BigInt   @id @default(autoincrement())
-  orderId   BigInt
-  create_at DateTime @db.Timestamp(6)
-  order     Order    @relation(fields: [orderId], references: [id], map: "FK_ORDER_TO_ORDER_LOG_1")
+  id       Int      @id @default(autoincrement())
+  orderId  Int
+  createAt DateTime @default(now())
+  order    Order    @relation(fields: [orderId], references: [id], map: "FK_ORDER_TO_ORDER_LOG_1")
 }
 
 model Review {
-  id        BigInt  @id @default(autoincrement())
-  productId BigInt
-  memberId  BigInt
+  id        Int     @id @default(autoincrement())
+  productId Int
+  memberId  Int
   content   String
   member    Member  @relation(fields: [memberId], references: [id], map: "FK_MEMBER_TO_REVIEW_1")
   product   Product @relation(fields: [productId], references: [id], map: "FK_SHOP_TO_REVIEW_1")
 }
 
 model Search {
-  id        BigInt      @id @default(autoincrement())
+  id        Int         @id @default(autoincrement())
   word      String?
   sort      String?
   searchlog SearchLog[]
 }
 
 model SearchLog {
-  id        BigInt   @id @default(autoincrement())
-  sortId    BigInt
+  id        Int      @id @default(autoincrement())
+  sortId    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   search    Search   @relation(fields: [sortId], references: [id], map: "FK_SEARCH_TO_SEARCH_LOG_1")
 }
 
 model Product {
-  id         BigInt     @id @default(autoincrement())
-  categoryId BigInt
+  id         Int        @id @default(autoincrement())
+  categoryId Int
   title      String
   price      Int
   qty        Int        @default(1)
@@ -118,9 +118,9 @@ model Product {
 }
 
 model Wishlist {
-  id        BigInt  @id @default(autoincrement())
-  productId BigInt
-  memberId  BigInt
+  id        Int     @id @default(autoincrement())
+  productId Int
+  memberId  Int
   member    Member  @relation(fields: [memberId], references: [id], map: "FK_MEMBER_TO_WISTLIST_1")
   product   Product @relation(fields: [productId], references: [id], map: "FK_SHOP_TO_WISTLIST_1")
 }

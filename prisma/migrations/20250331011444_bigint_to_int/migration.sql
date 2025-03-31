@@ -3,8 +3,8 @@ CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
 
 -- CreateTable
 CREATE TABLE "Board" (
-    "id" BIGSERIAL NOT NULL,
-    "memberId" BIGINT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "memberId" INTEGER NOT NULL,
     "title" TEXT NOT NULL,
     "contents" TEXT NOT NULL,
     "category" TEXT NOT NULL,
@@ -15,9 +15,9 @@ CREATE TABLE "Board" (
 
 -- CreateTable
 CREATE TABLE "Cart" (
-    "id" BIGSERIAL NOT NULL,
-    "productId" BIGINT NOT NULL,
-    "memberId" BIGINT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "productId" INTEGER NOT NULL,
+    "memberId" INTEGER NOT NULL,
     "qty" INTEGER NOT NULL,
 
     CONSTRAINT "Cart_pkey" PRIMARY KEY ("id")
@@ -25,7 +25,7 @@ CREATE TABLE "Cart" (
 
 -- CreateTable
 CREATE TABLE "Category" (
-    "id" BIGSERIAL NOT NULL,
+    "id" SERIAL NOT NULL,
     "category" TEXT NOT NULL,
 
     CONSTRAINT "Category_pkey" PRIMARY KEY ("id")
@@ -33,9 +33,9 @@ CREATE TABLE "Category" (
 
 -- CreateTable
 CREATE TABLE "Image" (
-    "id" BIGSERIAL NOT NULL,
-    "productId" BIGINT NOT NULL,
-    "boardId" BIGINT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "productId" INTEGER NOT NULL,
+    "boardId" INTEGER NOT NULL,
     "image" TEXT,
 
     CONSTRAINT "Image_pkey" PRIMARY KEY ("id")
@@ -43,7 +43,7 @@ CREATE TABLE "Image" (
 
 -- CreateTable
 CREATE TABLE "Member" (
-    "id" BIGSERIAL NOT NULL,
+    "id" SERIAL NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -55,9 +55,9 @@ CREATE TABLE "Member" (
 
 -- CreateTable
 CREATE TABLE "Order" (
-    "id" BIGSERIAL NOT NULL,
-    "productId" BIGINT NOT NULL,
-    "memberId" BIGINT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "productId" INTEGER NOT NULL,
+    "memberId" INTEGER NOT NULL,
     "payment" TEXT,
     "total" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -67,18 +67,18 @@ CREATE TABLE "Order" (
 
 -- CreateTable
 CREATE TABLE "OrderLog" (
-    "id" BIGSERIAL NOT NULL,
-    "orderId" BIGINT NOT NULL,
-    "create_at" TIMESTAMP(6) NOT NULL,
+    "id" SERIAL NOT NULL,
+    "orderId" INTEGER NOT NULL,
+    "createAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "OrderLog_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Review" (
-    "id" BIGSERIAL NOT NULL,
-    "productId" BIGINT NOT NULL,
-    "memberId" BIGINT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "productId" INTEGER NOT NULL,
+    "memberId" INTEGER NOT NULL,
     "content" TEXT NOT NULL,
 
     CONSTRAINT "Review_pkey" PRIMARY KEY ("id")
@@ -86,7 +86,7 @@ CREATE TABLE "Review" (
 
 -- CreateTable
 CREATE TABLE "Search" (
-    "id" BIGSERIAL NOT NULL,
+    "id" SERIAL NOT NULL,
     "word" TEXT,
     "sort" TEXT,
 
@@ -95,8 +95,8 @@ CREATE TABLE "Search" (
 
 -- CreateTable
 CREATE TABLE "SearchLog" (
-    "id" BIGSERIAL NOT NULL,
-    "sortId" BIGINT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "sortId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -105,8 +105,8 @@ CREATE TABLE "SearchLog" (
 
 -- CreateTable
 CREATE TABLE "Product" (
-    "id" BIGSERIAL NOT NULL,
-    "categoryId" BIGINT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "categoryId" INTEGER NOT NULL,
     "title" TEXT NOT NULL,
     "price" INTEGER NOT NULL,
     "qty" INTEGER NOT NULL DEFAULT 1,
@@ -120,9 +120,9 @@ CREATE TABLE "Product" (
 
 -- CreateTable
 CREATE TABLE "Wishlist" (
-    "id" BIGSERIAL NOT NULL,
-    "productId" BIGINT NOT NULL,
-    "memberId" BIGINT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "productId" INTEGER NOT NULL,
+    "memberId" INTEGER NOT NULL,
 
     CONSTRAINT "Wishlist_pkey" PRIMARY KEY ("id")
 );

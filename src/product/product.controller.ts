@@ -9,6 +9,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { Public } from 'src/auth/decorator/public.decorator';
 import { Roles } from 'src/auth/decorator/role.decorator';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -24,11 +25,13 @@ export class ProductController {
     return this.productService.create(dto);
   }
 
+  @Public()
   @Get()
   async findAll(@Query('title') title?: string) {
     return await this.productService.findAll(title);
   }
 
+  @Public()
   @Get(':id')
   async findById(@Param('id', ParseIntPipe) id: number) {
     return await this.productService.findById(id);

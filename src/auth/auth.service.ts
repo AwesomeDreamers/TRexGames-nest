@@ -24,7 +24,7 @@ export class AuthService {
   async login(dto: LoginDto) {
     const user = await this.vailidateUser(dto);
     const payload = {
-      id: user.id,
+      id: String(user.id),
       role: user.role,
     };
     return {
@@ -86,7 +86,7 @@ export class AuthService {
       user = await this.userService.signup(dto);
     }
     const payload = {
-      id: user.id,
+      id: String(user.id),
       role: user.role,
     };
     return {
@@ -103,7 +103,7 @@ export class AuthService {
       user = await this.userService.signup(dto);
     }
     const payload = {
-      id: user.id,
+      id: String(user.id),
       role: user.role,
     };
     return {

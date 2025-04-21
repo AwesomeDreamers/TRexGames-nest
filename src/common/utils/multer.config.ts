@@ -39,9 +39,7 @@ export class MulterConfigService implements MulterOptionsFactory {
       }),
       limits: { fileSize: 1000 * 1024 * 1024 },
       fileFilter: (req, file, callback) => {
-        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
-
-        if (allowedMimeTypes.includes(file.mimetype)) {
+        if (file.mimetype.startsWith('image/')) {
           callback(null, true);
         } else {
           callback(

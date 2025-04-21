@@ -18,12 +18,182 @@ enum Role {
   ADMIN
 }
 
+enum SpecType {
+  MIN
+  REC
+}
+
 model User {
-  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email    String  @unique
-  name     String?
-  password String
-  image    String?
-  provider String  @default("credentials")
-  role     Role    @default(USER)
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  password  String
+  image     String?
+  provider  String   @default("credentials")
+  role      Role     @default(USER)
+  cart      Cart?
+  reviews   Review[]
+  Order     Order[]
+  createdAt DateTime @default(now())
+}
+
+model Platform {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  discount    Int      @default(0)
+  description String
+  price       Int
+  rating      Float?   @default(0.0)
+  specs       Spec[]
+  images      Image[]
+  reviews     Review[]
+  platformId  Int
+  platform    Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  categoryId  Int
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Spec {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type      SpecType
+  cpu       String
+  gpu       String
+  ram       String
+  storage   String
+  directX   String
+  os        String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Image {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Banner {
+  id        Int      @id @default(autoincrement())
+  image     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  rating    Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Coupon {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique
+  discount   Int
+  startDate  DateTime
+  endDate    DateTime
+  usageCount Int
+  usageLimit Int
+  orders     Order[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Cart {
+  id        Int        @id @default(autoincrement())
+  userId    Int
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([userId])
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String   @db.Uuid
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+}
+
+model Order {
+  id            Int           @id @default(autoincrement())
+  userId        Int
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items         OrderItem[]
+  couponId      Int?
+  coupon        Coupon?       @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  total         Int
+  status        OrderStatus   @default(PENDING)
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus @default(PENDING)
+  paymentId     Int?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([couponId])
+}
+
+model OrderItem {
+  id              Int      @id @default(autoincrement())
+  orderId         Int
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId       Int
+  productName     String
+  productCategory String
+  quantity        Int
+  price           Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  DELIVERED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
 }

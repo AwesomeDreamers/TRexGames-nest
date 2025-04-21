@@ -6,15 +6,34 @@ import {
 } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
 import { JwtGuard } from './auth/guards/jwt.guard';
 import { RoleGuard } from './auth/guards/role.guard';
+import { CategoryModule } from './category/category.module';
 import { CommonModule } from './common/common.module';
 import { RequestMiddleware } from './common/utils/logger.middleware';
+import { FileModule } from './file/file.module';
+import { PlatformModule } from './platform/platform.module';
+import { ProductModule } from './product/product.module';
 import { UserModule } from './user/user.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), CommonModule, AuthModule, UserModule],
+  imports: [
+    ConfigModule.forRoot(),
+    CommonModule,
+    AuthModule,
+    UserModule,
+    ProductModule,
+    CategoryModule,
+    PlatformModule,
+    FileModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads/',
+    }),
+  ],
   controllers: [],
   providers: [
     {

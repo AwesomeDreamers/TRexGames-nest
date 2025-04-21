@@ -1,0 +1,51 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { Roles } from 'src/auth/decorator/role.decorator';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductService } from './product.service';
+
+@Controller('product')
+export class ProductController {
+  constructor(private readonly productService: ProductService) {}
+
+  @Roles('ADMIN')
+  @Post('create')
+  async create(@Body() dto: CreateProductDto) {
+    return this.productService.create(dto);
+  }
+
+  @Get()
+  async findAll(@Query('title') title?: string) {
+    return await this.productService.findAll(title);
+  }
+
+  @Get(':id')
+  async findById(@Param('id', ParseIntPipe) id: number) {
+    return await this.productService.findById(id);
+  }
+
+  @Roles('ADMIN')
+  @Patch(':id')
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateProductDto,
+  ) {
+    return this.productService.update(id, dto);
+  }
+
+  @Roles('ADMIN')
+  @Delete(':id')
+  async delete(@Param('id', ParseIntPipe) id: number) {
+    return this.productService.delete(id);
+  }
+}

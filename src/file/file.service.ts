@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ContentsDto } from './dto/contents.dto';
 
 @Injectable()
 export class FileService {
@@ -12,9 +13,16 @@ export class FileService {
     return fileUrl;
   }
 
-  async uploadContentImage(urls: string[]) {
+  async uploadContentImage(dto: ContentsDto) {
+    const { urls, slug } = dto;
     const imageUrls = [];
-    const contentsDir = path.join(process.cwd(), 'uploads/contents');
+    const contentsDir = path.join(process.cwd(), 'uploads/contents', slug);
+
+    // slug 폴더가 없으면 생성
+    if (!fs.existsSync(contentsDir)) {
+      await fs.promises.mkdir(contentsDir, { recursive: true });
+      console.log(`폴더 생성: ${contentsDir}`);
+    }
 
     const existingFiles = await fs.promises.readdir(contentsDir);
 
@@ -26,7 +34,7 @@ export class FileService {
 
       const imageFilename = path.basename(url);
 
-      if (url.includes('/uploads/contents')) {
+      if (url.includes(`/uploads/contents/${slug}`)) {
         console.log(`기존 이미지로 간주: ${url}`);
         imageUrls.push(url);
         existingFiles.splice(existingFiles.indexOf(imageFilename), 1);
@@ -39,11 +47,12 @@ export class FileService {
           'uploads/temp',
           imageFilename,
         );
-        const imageFinalPath = path.join(contentsDir, imageFilename);
+        const newImageFilename = `${slug}_${imageFilename}`;
+        const imageFinalPath = path.join(contentsDir, newImageFilename);
 
         try {
           await fs.promises.rename(imageTempPath, imageFinalPath);
-          const fileUrl = `${process.env.SERVER_URL}/uploads/contents/${imageFilename}`;
+          const fileUrl = `${process.env.SERVER_URL}/uploads/contents/${slug}/${newImageFilename}`;
           imageUrls.push(fileUrl);
         } catch (error) {
           console.error(

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Roles } from 'src/auth/decorator/role.decorator';
+import { ContentsDto } from './dto/contents.dto';
 import { FileService } from './file.service';
 
 @Controller('file')
@@ -21,7 +22,7 @@ export class FileController {
   }
   @Roles('ADMIN')
   @Post('content/image-path')
-  async changePathContentImage(@Body('urls') urls: string[]) {
-    return await this.fileService.uploadContentImage(urls);
+  async changePathContentImage(@Body() dto: ContentsDto) {
+    return await this.fileService.uploadContentImage(dto);
   }
 }

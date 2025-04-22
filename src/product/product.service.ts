@@ -1,3 +1,4 @@
+import { Product } from '.prisma/client';
 import {
   Injectable,
   InternalServerErrorException,
@@ -273,45 +274,131 @@ export class ProductService {
     });
   }
 
-  async delete(id: number) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
-      include: { images: true },
-    });
-    if (!product) {
-      throw new NotFoundException('상품을 찾을 수 없습니다.');
-    }
-    for (const image of product.images) {
-      const imageFilename = path.basename(image.url);
-      const imagePath = path.join(
-        process.cwd(),
-        'uploads/images',
-        imageFilename,
-      );
+  async deletes(ids: number[]) {
+    return await this.prisma.$transaction(async (prisma) => {
+      const products = await prisma.product.findMany({
+        where: {
+          id: {
+            in: ids,
+          },
+        },
+        include: { images: true },
+      });
 
+      if (products.length === 0) {
+        throw new NotFoundException('삭제할 상품을 찾을 수 없습니다.');
+      }
+
+      await prisma.image.deleteMany({
+        where: {
+          productId: {
+            in: ids,
+          },
+        },
+      });
+
+      const deletedProducts = await prisma.product.deleteMany({
+        where: {
+          id: {
+            in: ids,
+          },
+        },
+      });
+
+      await this.deleteAssetContents(products);
+
+      return {
+        status: 200,
+        message: '상품이 성공적으로 삭제되었습니다.',
+        payload: deletedProducts,
+      };
+    });
+  }
+
+  async delete(id: number) {
+    return await this.prisma.$transaction(async (prisma) => {
+      const product = await prisma.product.findUnique({
+        where: { id },
+        include: { images: true },
+      });
+      if (!product) {
+        throw new NotFoundException('상품을 찾을 수 없습니다.');
+      }
+
+      await prisma.image.deleteMany({
+        where: { productId: id },
+      });
+
+      await prisma.product.delete({
+        where: { id },
+      });
+
+      await this.deleteAssetContents([product]);
+
+      return {
+        status: 200,
+        message: '상품이 성공적으로 삭제되었습니다.',
+        payload: null,
+      };
+    });
+  }
+
+  private async deleteAssetContents(products: Product[]) {
+    for (const product of products) {
+      const slugDir = path.join(process.cwd(), 'uploads/images', product.slug);
       try {
-        await fs.promises.unlink(imagePath);
+        if (fs.existsSync(slugDir)) {
+          await fs.promises.rmdir(slugDir, { recursive: true });
+          console.log(`폴더 삭제 성공: ${slugDir}`);
+        }
       } catch (error) {
-        console.error(`이미지 삭제 실패: ${imagePath}`, error);
+        console.error(`폴더 삭제 실패: ${slugDir}`, error);
         throw new InternalServerErrorException(
-          '이미지 파일 삭제 중 오류가 발생했습니다.',
+          '이미지 폴더 삭제 중 오류가 발생했습니다.',
         );
       }
+
+      const imageUrlsInDescription = this.extractImageUrls(product.description);
+      for (const contentsImageUrl of imageUrlsInDescription) {
+        const imageSlug = this.extractSlugFromUrl(contentsImageUrl);
+        if (imageSlug) {
+          const descriptionSlugDir = path.join(
+            process.cwd(),
+            'uploads/contents',
+            imageSlug,
+          );
+          try {
+            if (fs.existsSync(descriptionSlugDir)) {
+              await fs.promises.rmdir(descriptionSlugDir, {
+                recursive: true,
+              });
+              console.log(`폴더 삭제 성공: ${descriptionSlugDir}`);
+            }
+          } catch (error) {
+            console.error(`폴더 삭제 실패: ${descriptionSlugDir}`, error);
+            throw new InternalServerErrorException(
+              '설명 이미지 폴더 삭제 중 오류가 발생했습니다.',
+            );
+          }
+        }
+      }
+    }
+  }
+
+  private extractImageUrls(description: string): string[] {
+    const imgSrcRegex = /<img[^>]+src="([^">]+)"/g;
+    const urls: string[] = [];
+    let match;
+
+    while ((match = imgSrcRegex.exec(description)) !== null) {
+      urls.push(match[1]);
     }
 
-    await this.prisma.image.deleteMany({
-      where: { productId: id },
-    });
+    return urls;
+  }
 
-    // 상품 삭제
-    await this.prisma.product.delete({
-      where: { id },
-    });
-
-    return {
-      status: 200,
-      message: '상품이 성공적으로 삭제되었습니다.',
-      payload: null,
-    };
+  private extractSlugFromUrl(url: string): string | null {
+    const match = url.match(/\/uploads\/contents\/([^/]+)\//);
+    return match ? match[1] : null;
   }
 }

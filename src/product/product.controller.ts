@@ -47,6 +47,12 @@ export class ProductController {
   }
 
   @Roles('ADMIN')
+  @Delete()
+  async deletes(@Body() ids: number[]) {
+    return this.productService.deletes(ids);
+  }
+
+  @Roles('ADMIN')
   @Delete(':id')
   async delete(@Param('id', ParseIntPipe) id: number) {
     return this.productService.delete(id);

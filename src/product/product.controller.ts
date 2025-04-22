@@ -5,8 +5,8 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import { Public } from 'src/auth/decorator/public.decorator';
@@ -38,7 +38,7 @@ export class ProductController {
   }
 
   @Roles('ADMIN')
-  @Patch(':id')
+  @Put(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProductDto,

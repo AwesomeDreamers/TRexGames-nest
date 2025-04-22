@@ -45,31 +45,31 @@ export class ProductService {
 
       // 2. 이미지 이동 및 URL 저장
       const movedImages = [];
+      const slugDir = path.join(process.cwd(), 'uploads/images', slug);
+
+      // slug 폴더가 없으면 생성
+      if (!fs.existsSync(slugDir)) {
+        await fs.promises.mkdir(slugDir, { recursive: true });
+        console.log(`폴더 생성: ${slugDir}`);
+      }
+
       for (const imageUrl of images) {
-        console.log('basename', path.basename(imageUrl));
-
         const imageFilename = path.basename(imageUrl);
-        console.log('imageFilename', imageFilename);
-
         const newImageFilename = `${slug}_${imageFilename}`;
         const imageTempPath = path.join(
           process.cwd(),
           'uploads/temp',
           imageFilename,
         );
-        const imageFinalPath = path.join(
-          process.cwd(),
-          'uploads/images',
-          newImageFilename,
-        );
+        const imageFinalPath = path.join(slugDir, newImageFilename);
 
         try {
           await fs.promises.rename(imageTempPath, imageFinalPath);
           movedImages.push(
-            `${process.env.SERVER_URL}/uploads/images/${newImageFilename}`,
+            `${process.env.SERVER_URL}/uploads/images/${slug}/${newImageFilename}`,
           );
         } catch (error) {
-          console.error(error);
+          console.error(`이미지 이동 실패: ${imageTempPath}`, error);
           throw new InternalServerErrorException(
             '이미지 파일 이동 중 오류가 발생했습니다.',
           );
@@ -128,6 +128,20 @@ export class ProductService {
       where: {
         id,
       },
+      include: {
+        images: {
+          select: {
+            url: true,
+          },
+        },
+        platform: true,
+        category: true,
+        specs: {
+          where: {
+            productId: id,
+          },
+        },
+      },
     });
     if (!product) {
       throw new NotFoundException('상품을 찾을 수 없습니다.');
@@ -150,109 +164,113 @@ export class ProductService {
       images,
     } = dto;
 
-    const existingProduct = await this.prisma.product.findUnique({
-      where: { id },
-      include: { images: true },
-    });
+    return await this.prisma.$transaction(async (prisma) => {
+      const existingProduct = await prisma.product.findUnique({
+        where: { id },
+        include: { images: true },
+      });
 
-    if (!existingProduct) {
-      throw new NotFoundException('상품을 찾을 수 없습니다.');
-    }
-
-    const existingImageUrls = existingProduct.images.map((img) => img.url);
-    const imagesToDelete = existingImageUrls.filter(
-      (url) => !images.includes(url),
-    );
-    const imagesToAdd = images.filter(
-      (url) => !existingImageUrls.includes(url),
-    );
-
-    for (const imageUrl of imagesToDelete) {
-      const imageFilename = path.basename(imageUrl);
-      const imagePath = path.join(
-        process.cwd(),
-        'uploads/images',
-        imageFilename,
-      );
-
-      try {
-        await fs.promises.unlink(imagePath);
-      } catch (error) {
-        console.error(`이미지 삭제 실패: ${imagePath}`, error);
-        throw new InternalServerErrorException(
-          '이미지 파일 삭제 중 오류가 발생했습니다.',
-        );
+      if (!existingProduct) {
+        throw new NotFoundException('상품을 찾을 수 없습니다.');
       }
 
-      await this.prisma.image.deleteMany({
-        where: { url: imageUrl, productId: id },
-      });
-    }
-
-    const movedImages = [];
-    for (const imageUrl of imagesToAdd) {
-      const imageFilename = path.basename(imageUrl);
-      const newImageFilename = `${slug}_${imageFilename}`;
-      const imageTempPath = path.join(
-        process.cwd(),
-        'uploads/temp',
-        imageFilename,
+      const existingImageUrls = existingProduct.images.map((img) => img.url);
+      const imagesToDelete = existingImageUrls.filter(
+        (url) => !images.includes(url),
       );
-      const imageFinalPath = path.join(
-        process.cwd(),
-        'uploads/images',
-        newImageFilename,
+      const imagesToAdd = images.filter(
+        (url) => !existingImageUrls.includes(url),
       );
 
-      try {
-        await fs.promises.rename(imageTempPath, imageFinalPath);
-        movedImages.push(
-          `${process.env.SERVER_URL}/uploads/images/${newImageFilename}`,
+      for (const imageUrl of imagesToDelete) {
+        const imageFilename = path.basename(imageUrl);
+        const imagePath = path.join(
+          process.cwd(),
+          'uploads/images',
+          slug,
+          imageFilename,
         );
-      } catch (error) {
-        console.error(`이미지 이동 실패: ${imageTempPath}`, error);
-        throw new InternalServerErrorException(
-          '이미지 파일 이동 중 오류가 발생했습니다.',
-        );
+
+        try {
+          await fs.promises.unlink(imagePath);
+        } catch (error) {
+          console.error(`이미지 삭제 실패: ${imagePath}`, error);
+          throw new InternalServerErrorException(
+            '이미지 파일 삭제 중 오류가 발생했습니다.',
+          );
+        }
+
+        await prisma.image.deleteMany({
+          where: { url: imageUrl, productId: id },
+        });
       }
-    }
 
-    await this.prisma.image.createMany({
-      data: movedImages.map((url) => ({ url, productId: id })),
-    });
+      const movedImages = [];
+      for (const imageUrl of imagesToAdd) {
+        const imageFilename = path.basename(imageUrl);
+        const newImageFilename = `${slug}_${imageFilename}`;
+        const imageTempPath = path.join(
+          process.cwd(),
+          'uploads/temp',
+          imageFilename,
+        );
+        const imageFinalPath = path.join(
+          process.cwd(),
+          'uploads/images',
+          slug,
+          newImageFilename,
+        );
 
-    const updatedProduct = await this.prisma.product.update({
-      where: { id },
-      data: {
-        name,
-        slug,
-        description,
-        price,
-        platformId,
-        categoryId,
-        discount,
-      },
-    });
+        try {
+          await fs.promises.rename(imageTempPath, imageFinalPath);
+          movedImages.push(
+            `${process.env.SERVER_URL}/uploads/images/${slug}/${newImageFilename}`,
+          );
+        } catch (error) {
+          console.error(`이미지 이동 실패: ${imageTempPath}`, error);
+          throw new InternalServerErrorException(
+            '이미지 파일 이동 중 오류가 발생했습니다.',
+          );
+        }
+      }
 
-    if (minSpec) {
-      await this.prisma.spec.updateMany({
-        where: { productId: id, type: 'MIN' },
-        data: minSpec,
+      await prisma.image.createMany({
+        data: movedImages.map((url) => ({ url, productId: id })),
       });
-    }
 
-    if (recSpec) {
-      await this.prisma.spec.updateMany({
-        where: { productId: id, type: 'REC' },
-        data: recSpec,
+      const updatedProduct = await prisma.product.update({
+        where: { id },
+        data: {
+          name,
+          slug,
+          description,
+          price,
+          platformId,
+          categoryId,
+          discount,
+        },
       });
-    }
 
-    return {
-      status: 200,
-      message: '상품이 성공적으로 업데이트되었습니다.',
-      payload: updatedProduct,
-    };
+      if (minSpec) {
+        await prisma.spec.updateMany({
+          where: { productId: id, type: 'MIN' },
+          data: minSpec,
+        });
+      }
+
+      if (recSpec) {
+        await prisma.spec.updateMany({
+          where: { productId: id, type: 'REC' },
+          data: recSpec,
+        });
+      }
+
+      return {
+        status: 200,
+        message: '상품이 성공적으로 업데이트되었습니다.',
+        payload: updatedProduct,
+      };
+    });
   }
 
   async delete(id: number) {

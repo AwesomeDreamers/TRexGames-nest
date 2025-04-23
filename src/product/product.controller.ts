@@ -26,7 +26,7 @@ export class ProductController {
   }
 
   @Public()
-  @Get()
+  @Get('all')
   async findAll(@Query('title') title?: string) {
     return await this.productService.findAll(title);
   }
@@ -47,13 +47,13 @@ export class ProductController {
   }
 
   @Roles('ADMIN')
-  @Delete()
+  @Delete('deletes')
   async deletes(@Body() ids: number[]) {
     return this.productService.deletes(ids);
   }
 
   @Roles('ADMIN')
-  @Delete(':id')
+  @Delete('delete/:id')
   async delete(@Param('id', ParseIntPipe) id: number) {
     return this.productService.delete(id);
   }

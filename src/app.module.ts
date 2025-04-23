@@ -18,6 +18,7 @@ import { FileModule } from './file/file.module';
 import { PlatformModule } from './platform/platform.module';
 import { ProductModule } from './product/product.module';
 import { UserModule } from './user/user.module';
+import { CouponModule } from './coupon/coupon.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { UserModule } from './user/user.module';
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads/',
     }),
+    CouponModule,
   ],
   controllers: [],
   providers: [

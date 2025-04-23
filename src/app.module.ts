@@ -19,6 +19,7 @@ import { PlatformModule } from './platform/platform.module';
 import { ProductModule } from './product/product.module';
 import { UserModule } from './user/user.module';
 import { CouponModule } from './coupon/coupon.module';
+import { BannerModule } from './banner/banner.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { CouponModule } from './coupon/coupon.module';
       serveRoot: '/uploads/',
     }),
     CouponModule,
+    BannerModule,
   ],
   controllers: [],
   providers: [

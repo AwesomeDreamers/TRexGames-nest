@@ -57,6 +57,7 @@ model Product {
   description String
   price       Int
   rating      Float?   @default(0.0)
+  numReviews  Int      @default(0)
   specs       Spec[]
   images      Image[]
   reviews     Review[]

@@ -12,6 +12,7 @@ import {
 import { Public } from 'src/auth/decorator/public.decorator';
 import { Roles } from 'src/auth/decorator/role.decorator';
 import { CreateProductDto } from './dto/create-product.dto';
+import { FilterDto } from './dto/fitlter.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductService } from './product.service';
 
@@ -56,5 +57,11 @@ export class ProductController {
   @Delete('delete/:id')
   async delete(@Param('id', ParseIntPipe) id: number) {
     return this.productService.delete(id);
+  }
+
+  @Public()
+  @Get()
+  async findProductsAllForClient(@Query() filters: FilterDto) {
+    return await this.productService.findProductsAllForClient(filters);
   }
 }

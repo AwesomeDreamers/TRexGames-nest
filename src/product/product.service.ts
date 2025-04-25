@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
+import { FilterDto } from './dto/fitlter.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
@@ -383,6 +384,83 @@ export class ProductService {
         }
       }
     }
+  }
+
+  async findProductsAllForClient(filters: FilterDto) {
+    const {
+      categories,
+      platforms,
+      minPrice,
+      maxPrice,
+      page = 1,
+      limit = 12,
+      sortBy,
+      sortOrder = 'desc',
+      name,
+    } = filters;
+
+    const where: any = {};
+
+    if (categories && categories.length > 0) {
+      where.category = {
+        name: {
+          in: categories,
+        },
+      };
+    }
+
+    if (platforms && platforms.length > 0) {
+      where.platform = {
+        name: {
+          in: platforms,
+        },
+      };
+    }
+
+    if (minPrice !== undefined && maxPrice !== undefined) {
+      where.price = {
+        gte: minPrice,
+        lte: maxPrice,
+      };
+    }
+
+    if (name) {
+      where.name = {
+        contains: name,
+        mode: 'insensitive',
+      };
+    }
+
+    const take = limit;
+    const skip = (page - 1) * take;
+    const orderBy = { [sortBy || 'createdAt']: sortOrder };
+
+    const [products, total] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        take,
+        skip,
+        orderBy,
+        include: {
+          images: true,
+          platform: true,
+          category: true,
+        },
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return {
+      status: 200,
+      message: null,
+      payload: {
+        products,
+        total,
+        page,
+        limit: take,
+        hasMore: page * take < total,
+      },
+    };
   }
 
   private extractImageUrls(description: string): string[] {

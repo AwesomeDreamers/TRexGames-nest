@@ -20,6 +20,8 @@ import { ProductModule } from './product/product.module';
 import { UserModule } from './user/user.module';
 import { CouponModule } from './coupon/coupon.module';
 import { BannerModule } from './banner/banner.module';
+import { CartModule } from './cart/cart.module';
+import { WishlistModule } from './wishlist/wishlist.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { BannerModule } from './banner/banner.module';
     }),
     CouponModule,
     BannerModule,
+    CartModule,
+    WishlistModule,
   ],
   controllers: [],
   providers: [

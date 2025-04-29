@@ -24,17 +24,18 @@ enum SpecType {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
   name      String?
   password  String
   image     String?
-  provider  String   @default("credentials")
-  role      Role     @default(USER)
+  provider  String     @default("credentials")
+  role      Role       @default(USER)
   cart      Cart?
   reviews   Review[]
   Order     Order[]
-  createdAt DateTime @default(now())
+  wishlist  Wishlist[]
+  createdAt DateTime   @default(now())
 }
 
 model Platform {
@@ -49,25 +50,37 @@ model Category {
   products Product[]
 }
 
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   name        String
-  slug        String   @unique
-  discount    Int      @default(0)
+  slug        String     @unique
+  discount    Int        @default(0)
   description String
   price       Int
-  rating      Float?   @default(0.0)
-  numReviews  Int      @default(0)
+  rating      Float?     @default(0.0)
+  numReviews  Int        @default(0)
   specs       Spec[]
   images      Image[]
   reviews     Review[]
+  wishlist    Wishlist[]
   platformId  Int
-  platform    Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  platform    Platform   @relation(fields: [platformId], references: [id], onDelete: Cascade)
   categoryId  Int
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  isFeatured  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  category    Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  isFeatured  Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 model Spec {
@@ -145,7 +158,7 @@ model CartItem {
   id        Int      @id @default(autoincrement())
   cartId    Int
   cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  productId String   @db.Uuid
+  productId Int
   quantity  Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -12,9 +12,8 @@ import { UpdateCarttDto } from './dto/update-cart.dto';
 export class CartService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateCartDto, id: string) {
+  async create(dto: CreateCartDto, userId: string) {
     const { productId, quantity } = dto;
-    const userId = Number(id);
 
     if (!userId) {
       throw new UnauthorizedException('로그인이 필요합니다.');
@@ -74,8 +73,7 @@ export class CartService {
     };
   }
 
-  async findAll(id: string) {
-    const userId = Number(id);
+  async findAll(userId: string) {
     if (!userId) {
       throw new UnauthorizedException('로그인이 필요합니다.');
     }
@@ -100,6 +98,8 @@ export class CartService {
             id: true,
             name: true,
             price: true,
+            platform: true,
+            category: true,
             discount: true,
             images: {
               select: {
@@ -114,6 +114,8 @@ export class CartService {
           name: product.name,
           price: product.price,
           discount: product.discount,
+          platform: product.platform,
+          category: product.category,
           quantity: item.quantity,
           image: product.images[0].url,
         };
@@ -127,9 +129,8 @@ export class CartService {
     };
   }
 
-  async update(dto: UpdateCarttDto, id: string) {
+  async update(dto: UpdateCarttDto, userId: string) {
     const { productId, quantity } = dto;
-    const userId = Number(id);
 
     if (!userId) {
       throw new UnauthorizedException('로그인이 필요합니다.');
@@ -139,7 +140,6 @@ export class CartService {
       throw new Error('유효하지 않은 수량입니다.');
     }
 
-    // 1. cartId 조회
     const cart = await this.prisma.cart.findUnique({
       where: { userId },
       select: { id: true },
@@ -149,7 +149,6 @@ export class CartService {
       throw new Error('장바구니가 존재하지 않습니다.');
     }
 
-    // 2. cartItem 존재 여부 확인
     const cartItem = await this.prisma.cartItem.findUnique({
       where: {
         cartId_productId: {
@@ -162,8 +161,6 @@ export class CartService {
     if (!cartItem) {
       throw new Error('해당 상품이 장바구니에 없습니다.');
     }
-
-    // 3. cartItem 업데이트
     const updatedCartItem = await this.prisma.cartItem.update({
       where: {
         cartId_productId: {
@@ -172,7 +169,7 @@ export class CartService {
         },
       },
       data: {
-        quantity: quantity, // 유효한 값만 전달
+        quantity: quantity,
       },
     });
 
@@ -183,9 +180,8 @@ export class CartService {
     };
   }
 
-  async delete(dto: UpdateCarttDto, id: string) {
+  async delete(dto: UpdateCarttDto, userId: string) {
     const { productId } = dto;
-    const userId = Number(id);
 
     if (!userId) {
       throw new UnauthorizedException('로그인이 필요합니다.');

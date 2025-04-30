@@ -68,7 +68,7 @@ export class BannerService {
     return { status: 200, message: null, payload: banners };
   }
 
-  async delete(id: number) {
+  async delete(id: string) {
     return await this.prisma.$transaction(async (prisma) => {
       const banner = await prisma.banner.findUnique({
         where: { id },
@@ -91,7 +91,7 @@ export class BannerService {
     });
   }
 
-  async deletes(ids: number[]) {
+  async deletes(ids: string[]) {
     return await this.prisma.$transaction(async (prisma) => {
       const banners = await prisma.banner.findMany({
         where: { id: { in: ids } },

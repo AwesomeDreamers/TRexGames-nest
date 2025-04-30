@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { Public } from 'src/auth/decorator/public.decorator';
 import { BannerService } from './banner.service';
 import { CreateBannerDto } from './dto/create-banner.dto';
@@ -27,12 +19,12 @@ export class BannerController {
   }
 
   @Delete('delete')
-  deletes(@Body('ids') ids: number[]) {
+  deletes(@Body('ids') ids: string[]) {
     return this.bannerService.deletes(ids);
   }
 
   @Delete('delete/:id')
-  delete(@Param('id', ParseIntPipe) id: number) {
+  delete(@Param('id') id: string) {
     return this.bannerService.delete(id);
   }
 }

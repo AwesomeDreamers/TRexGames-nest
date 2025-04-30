@@ -20,11 +20,11 @@ export class CreateProductDto {
   @IsNumber()
   price: number;
 
-  @IsNumber()
-  platformId: number;
+  @IsString()
+  platformId: string;
 
-  @IsNumber()
-  categoryId: number;
+  @IsString()
+  categoryId: string;
 
   @IsNumber()
   discount: number;

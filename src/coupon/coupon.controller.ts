@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { CouponService } from './coupon.service';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 
@@ -25,12 +17,12 @@ export class CouponController {
   }
 
   @Delete('delete/:id')
-  delete(@Param('id', ParseIntPipe) id: number) {
-    return this.couponService.delete(+id);
+  delete(@Param('id') id: string) {
+    return this.couponService.delete(id);
   }
 
   @Delete('deletes')
-  deletes(@Body() ids: number[]) {
+  deletes(@Body() ids: string[]) {
     return this.couponService.deletes(ids);
   }
 }

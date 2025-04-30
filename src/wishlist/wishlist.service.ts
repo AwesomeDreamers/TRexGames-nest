@@ -5,8 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 export class WishlistService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findWishlistsAll(id: string) {
-    const userId = Number(id);
+  async findWishlistsAll(userId: string) {
     const wishlists = await this.prisma.wishlist.findMany({
       where: {
         userId,
@@ -31,8 +30,7 @@ export class WishlistService {
     return { status: 200, message: null, payload: wishlists };
   }
 
-  async addWishlist(productId: number, id: string) {
-    const userId = Number(id);
+  async addWishlist(productId: number, userId: string) {
     await this.prisma.wishlist.create({
       data: {
         userId,
@@ -47,8 +45,7 @@ export class WishlistService {
     };
   }
 
-  async deleteWishlist(productId: number, id: string) {
-    const userId = Number(id);
+  async deleteWishlist(productId: number, userId: string) {
     await this.prisma.wishlist.delete({
       where: {
         userId_productId: {

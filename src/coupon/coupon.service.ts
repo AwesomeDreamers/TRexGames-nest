@@ -28,7 +28,7 @@ export class CouponService {
     return { status: 200, message: null, payload: coupons };
   }
 
-  async delete(id: number) {
+  async delete(id: string) {
     const coupon = await this.prisma.coupon.findUnique({
       where: { id },
     });
@@ -45,7 +45,7 @@ export class CouponService {
     };
   }
 
-  async deletes(ids: number[]) {
+  async deletes(ids: string[]) {
     const coupons = await this.prisma.coupon.findMany({
       where: {
         id: {

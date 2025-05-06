@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -30,7 +30,34 @@ export class WishlistService {
     return { status: 200, message: null, payload: wishlists };
   }
 
+  async count(userId: string) {
+    if (!userId) {
+      throw new UnauthorizedException('로그인이 필요합니다.');
+    }
+    const count = await this.prisma.wishlist.count({
+      where: {
+        userId,
+      },
+    });
+    return { status: 200, message: null, payload: count };
+  }
+
   async addWishlist(productId: number, userId: string) {
+    const isInWishlist = await this.prisma.wishlist.findFirst({
+      where: {
+        userId,
+        productId,
+      },
+    });
+
+    if (isInWishlist) {
+      return {
+        status: 200,
+        message: '찜목록에서 제거되었습니다.',
+        payload: true,
+      };
+    }
+
     await this.prisma.wishlist.create({
       data: {
         userId,
@@ -40,8 +67,8 @@ export class WishlistService {
 
     return {
       status: 201,
-      message: '위시리스트에 추가되었습니다.',
-      payload: null,
+      message: '찜목록에 추가되었습니다.',
+      payload: false,
     };
   }
 

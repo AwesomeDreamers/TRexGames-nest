@@ -12,6 +12,11 @@ export class WishlistController {
     return this.wishlistService.findWishlistsAll(user.id);
   }
 
+  @Get('count')
+  async getCartCount(@CurrentUser() user: Payload) {
+    return this.wishlistService.count(user.id);
+  }
+
   @Post('add')
   async addWishlist(
     @Body('productId') productId: number,

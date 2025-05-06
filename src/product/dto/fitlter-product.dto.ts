@@ -1,7 +1,8 @@
 import { Transform } from 'class-transformer';
 import { IsArray, IsOptional, IsString } from 'class-validator';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
-export class FilterDto {
+export class FilterProductDto extends PaginationDto {
   @IsOptional()
   @Transform(({ value }) =>
     typeof value === 'string' && value ? value.split(',').filter(Boolean) : [],
@@ -25,14 +26,6 @@ export class FilterDto {
   @IsOptional()
   @Transform(({ value }) => parseInt(value, 10))
   maxPrice?: number;
-
-  @IsOptional()
-  @Transform(({ value }) => parseInt(value, 10))
-  page?: number;
-
-  @IsOptional()
-  @Transform(({ value }) => parseInt(value, 10))
-  limit?: number;
 
   @IsOptional()
   @IsString()

@@ -3,7 +3,7 @@ import { CurrentUser } from 'src/common/decorator/current-user.decorator';
 import { Payload } from 'src/common/utils/type';
 import { CartService } from './cart.service';
 import { CreateCartDto } from './dto/create-cart.dto';
-import { UpdateCarttDto } from './dto/update-cart.dto';
+import { UpdateCartDto } from './dto/update-cart.dto';
 
 @Controller('cart')
 export class CartController {
@@ -19,13 +19,18 @@ export class CartController {
     return this.cartService.findAll(user.id);
   }
 
+  @Get('count')
+  async getCartCount(@CurrentUser() user: Payload) {
+    return this.cartService.count(user.id);
+  }
+
   @Put('update')
-  async updateCart(@Body() dto: UpdateCarttDto, @CurrentUser() user: Payload) {
+  async updateCart(@Body() dto: UpdateCartDto, @CurrentUser() user: Payload) {
     return this.cartService.update(dto, user.id);
   }
 
   @Delete('delete')
-  async deleteCart(@Body() dto: UpdateCarttDto, @CurrentUser() user: Payload) {
+  async deleteCart(@Body() dto: UpdateCartDto, @CurrentUser() user: Payload) {
     return this.cartService.delete(dto, user.id);
   }
 }

@@ -1,11 +1,16 @@
-import { IsString } from 'class-validator';
+import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateBannerDto {
-  @IsString()
-  link: string;
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  images: string[];
+
+  @IsNumber()
+  price: number;
 
   @IsString()
-  image: string;
+  url: string;
 
   @IsString()
   title: string;

@@ -1,7 +1,16 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { Public } from 'src/auth/decorator/public.decorator';
 import { BannerService } from './banner.service';
 import { CreateBannerDto } from './dto/create-banner.dto';
+import { FilterBannertDto } from './dto/fitlter-banner.dto';
 
 @Controller('banner')
 export class BannerController {
@@ -14,13 +23,13 @@ export class BannerController {
 
   @Public()
   @Get('all')
-  findAll() {
-    return this.bannerService.findAll();
+  findBannersAll(@Query() dto: FilterBannertDto) {
+    return this.bannerService.findBannersAll(dto);
   }
 
   @Delete('delete')
-  deletes(@Body('ids') ids: string[]) {
-    return this.bannerService.deletes(ids);
+  deleteMany(@Body('ids') ids: string[]) {
+    return this.bannerService.deleteMany(ids);
   }
 
   @Delete('delete/:id')

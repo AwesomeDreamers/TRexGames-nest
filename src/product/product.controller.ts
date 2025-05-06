@@ -12,7 +12,7 @@ import {
 import { Public } from 'src/auth/decorator/public.decorator';
 import { Roles } from 'src/auth/decorator/role.decorator';
 import { CreateProductDto } from './dto/create-product.dto';
-import { FilterDto } from './dto/fitlter.dto';
+import { FilterProductDto } from './dto/fitlter-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductService } from './product.service';
 
@@ -22,46 +22,40 @@ export class ProductController {
 
   @Roles('ADMIN')
   @Post('create')
-  async create(@Body() dto: CreateProductDto) {
-    return this.productService.create(dto);
+  async createProduct(@Body() dto: CreateProductDto) {
+    return this.productService.createProduct(dto);
   }
 
   @Public()
   @Get('all')
-  async findAll(@Query('title') title?: string) {
-    return await this.productService.findAll(title);
+  async findProductsAll(@Query() dto: FilterProductDto) {
+    return await this.productService.findProductsAll(dto);
   }
 
   @Public()
   @Get(':id')
-  async findById(@Param('id', ParseIntPipe) id: number) {
-    return await this.productService.findById(id);
+  async findProductById(@Param('id', ParseIntPipe) id: number) {
+    return await this.productService.findProductById(id);
   }
 
   @Roles('ADMIN')
   @Put(':id')
-  async update(
+  async updateProduct(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProductDto,
   ) {
-    return this.productService.update(id, dto);
+    return this.productService.updateProduct(id, dto);
   }
 
   @Roles('ADMIN')
-  @Delete('deletes')
-  async deletes(@Body() ids: number[]) {
-    return this.productService.deletes(ids);
+  @Delete('delete-many')
+  async deleteManyProducts(@Body() ids: number[]) {
+    return this.productService.deleteManyProducts(ids);
   }
 
   @Roles('ADMIN')
   @Delete('delete/:id')
-  async delete(@Param('id', ParseIntPipe) id: number) {
-    return this.productService.delete(id);
-  }
-
-  @Public()
-  @Get()
-  async findProductsAllForClient(@Query() filters: FilterDto) {
-    return await this.productService.findProductsAllForClient(filters);
+  async deleteProduct(@Param('id', ParseIntPipe) id: number) {
+    return this.productService.deleteProduct(id);
   }
 }

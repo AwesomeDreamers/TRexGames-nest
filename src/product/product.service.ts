@@ -8,14 +8,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
-import { FilterDto } from './dto/fitlter.dto';
+import { FilterProductDto } from './dto/fitlter-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateProductDto) {
+  async createProduct(dto: CreateProductDto) {
     const {
       name,
       slug,
@@ -30,7 +30,6 @@ export class ProductService {
     } = dto;
 
     return await this.prisma.$transaction(async (prisma) => {
-      // 1. 상품 생성
       const product = await prisma.product.create({
         data: {
           name,
@@ -44,12 +43,8 @@ export class ProductService {
       });
 
       const productId = product.id;
-
-      // 2. 이미지 이동 및 URL 저장
       const movedImages = [];
       const slugDir = path.join(process.cwd(), 'uploads/images', slug);
-
-      // slug 폴더가 없으면 생성
       if (!fs.existsSync(slugDir)) {
         await fs.promises.mkdir(slugDir, { recursive: true });
         console.log(`폴더 생성: ${slugDir}`);
@@ -81,8 +76,6 @@ export class ProductService {
       await prisma.image.createMany({
         data: movedImages.map((url) => ({ url, productId })),
       });
-
-      // 3. 최소 사양 저장
       await prisma.spec.create({
         data: {
           ...minSpec,
@@ -90,8 +83,6 @@ export class ProductService {
           productId,
         },
       });
-
-      // 4. 권장 사양 저장
       await prisma.spec.create({
         data: {
           ...recSpec,
@@ -99,8 +90,6 @@ export class ProductService {
           productId,
         },
       });
-
-      // 5. 성공적으로 완료된 경우 반환
       return {
         status: 201,
         message: '상품 등록 성공하였습니다.',
@@ -109,23 +98,79 @@ export class ProductService {
     });
   }
 
-  async findAll(title?: string) {
-    const products = await this.prisma.product.findMany({
-      where: {
+  async findProductsAll(dto: FilterProductDto) {
+    const {
+      categories,
+      platforms,
+      minPrice,
+      maxPrice,
+      page,
+      take,
+      sortBy,
+      sortOrder,
+      name,
+    } = dto;
+
+    const where: any = {};
+
+    if (categories && categories.length > 0) {
+      where.category = {
         name: {
-          contains: title,
+          in: categories,
         },
+      };
+    }
+
+    if (platforms && platforms.length > 0) {
+      where.platform = {
+        name: {
+          in: platforms,
+        },
+      };
+    }
+
+    if (minPrice !== undefined && maxPrice !== undefined) {
+      where.price = {
+        gte: minPrice,
+        lte: maxPrice,
+      };
+    }
+
+    if (name) {
+      where.name = {
+        contains: name,
+        mode: 'insensitive',
+      };
+    }
+    const skip = (page - 1) * take;
+    const orderBy = { [sortBy || 'createdAt']: sortOrder };
+
+    const [products, totalCount] = await Promise.all([
+      this.prisma.product.findMany({
+        where,
+        take,
+        skip,
+        orderBy,
+        include: {
+          images: true,
+          platform: true,
+          category: true,
+        },
+      }),
+      this.prisma.product.count({ where }),
+    ]);
+
+    return {
+      status: 200,
+      message: null,
+      payload: {
+        products,
+        totalCount,
       },
-      include: {
-        images: true,
-        platform: true,
-        category: true,
-      },
-    });
-    return { status: 200, message: null, payload: products };
+    };
   }
 
-  async findById(id: number) {
+  async findProductById(id: number) {
     const product = await this.prisma.product.findUnique({
       where: {
         id,
@@ -152,7 +197,7 @@ export class ProductService {
     return { status: 200, message: null, payload: product };
   }
 
-  async update(id: number, dto: UpdateProductDto) {
+  async updateProduct(id: number, dto: UpdateProductDto) {
     const {
       name,
       slug,
@@ -275,7 +320,7 @@ export class ProductService {
     });
   }
 
-  async deletes(ids: number[]) {
+  async deleteManyProducts(ids: number[]) {
     return await this.prisma.$transaction(async (prisma) => {
       const products = await prisma.product.findMany({
         where: {
@@ -298,7 +343,7 @@ export class ProductService {
         },
       });
 
-      const deletedProducts = await prisma.product.deleteMany({
+      await prisma.product.deleteMany({
         where: {
           id: {
             in: ids,
@@ -311,12 +356,12 @@ export class ProductService {
       return {
         status: 200,
         message: '상품이 성공적으로 삭제되었습니다.',
-        payload: deletedProducts,
+        payload: null,
       };
     });
   }
 
-  async delete(id: number) {
+  async deleteProduct(id: number) {
     return await this.prisma.$transaction(async (prisma) => {
       const product = await prisma.product.findUnique({
         where: { id },
@@ -384,83 +429,6 @@ export class ProductService {
         }
       }
     }
-  }
-
-  async findProductsAllForClient(filters: FilterDto) {
-    const {
-      categories,
-      platforms,
-      minPrice,
-      maxPrice,
-      page = 1,
-      limit = 12,
-      sortBy,
-      sortOrder = 'desc',
-      name,
-    } = filters;
-
-    const where: any = {};
-
-    if (categories && categories.length > 0) {
-      where.category = {
-        name: {
-          in: categories,
-        },
-      };
-    }
-
-    if (platforms && platforms.length > 0) {
-      where.platform = {
-        name: {
-          in: platforms,
-        },
-      };
-    }
-
-    if (minPrice !== undefined && maxPrice !== undefined) {
-      where.price = {
-        gte: minPrice,
-        lte: maxPrice,
-      };
-    }
-
-    if (name) {
-      where.name = {
-        contains: name,
-        mode: 'insensitive',
-      };
-    }
-
-    const take = limit;
-    const skip = (page - 1) * take;
-    const orderBy = { [sortBy || 'createdAt']: sortOrder };
-
-    const [products, total] = await Promise.all([
-      this.prisma.product.findMany({
-        where,
-        take,
-        skip,
-        orderBy,
-        include: {
-          images: true,
-          platform: true,
-          category: true,
-        },
-      }),
-      this.prisma.product.count({ where }),
-    ]);
-
-    return {
-      status: 200,
-      message: null,
-      payload: {
-        products,
-        total,
-        page,
-        limit: take,
-        hasMore: page * take < total,
-      },
-    };
   }
 
   private extractImageUrls(description: string): string[] {

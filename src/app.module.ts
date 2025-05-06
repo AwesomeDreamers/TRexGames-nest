@@ -22,6 +22,10 @@ import { CouponModule } from './coupon/coupon.module';
 import { BannerModule } from './banner/banner.module';
 import { CartModule } from './cart/cart.module';
 import { WishlistModule } from './wishlist/wishlist.module';
+import { OrderModule } from './order/order.module';
+import { PaymentModule } from './payment/payment.module';
+import { ReviewModule } from './review/review.module';
+import { HomeModule } from './home/home.module';
 
 @Module({
   imports: [
@@ -41,6 +45,10 @@ import { WishlistModule } from './wishlist/wishlist.module';
     BannerModule,
     CartModule,
     WishlistModule,
+    OrderModule,
+    PaymentModule,
+    ReviewModule,
+    HomeModule,
   ],
   controllers: [],
   providers: [

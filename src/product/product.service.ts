@@ -1,11 +1,9 @@
 import { Product } from '.prisma/client';
-import {
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ErrorCode } from 'src/common/enum/error-code.enum';
+import { ApiException } from 'src/common/error/api.exception';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { FilterProductDto } from './dto/fitlter-product.dto';
@@ -47,7 +45,7 @@ export class ProductService {
       const slugDir = path.join(process.cwd(), 'uploads/images', slug);
       if (!fs.existsSync(slugDir)) {
         await fs.promises.mkdir(slugDir, { recursive: true });
-        console.log(`폴더 생성: ${slugDir}`);
+        // console.log(`폴더 생성: ${slugDir}`);
       }
 
       for (const imageUrl of images) {
@@ -67,9 +65,7 @@ export class ProductService {
           );
         } catch (error) {
           console.error(`이미지 이동 실패: ${imageTempPath}`, error);
-          throw new InternalServerErrorException(
-            '이미지 파일 이동 중 오류가 발생했습니다.',
-          );
+          throw new ApiException(ErrorCode.IMAGE_FILES_MOVE_ERROR);
         }
       }
 
@@ -90,11 +86,7 @@ export class ProductService {
           productId,
         },
       });
-      return {
-        status: 201,
-        message: '상품 등록 성공하였습니다.',
-        payload: product,
-      };
+      return product;
     });
   }
 
@@ -161,12 +153,8 @@ export class ProductService {
     ]);
 
     return {
-      status: 200,
-      message: null,
-      payload: {
-        products,
-        totalCount,
-      },
+      products,
+      totalCount,
     };
   }
 
@@ -191,10 +179,10 @@ export class ProductService {
       },
     });
     if (!product) {
-      throw new NotFoundException('상품을 찾을 수 없습니다.');
+      throw new ApiException(ErrorCode.PRODUCT_NOT_FOUND);
     }
 
-    return { status: 200, message: null, payload: product };
+    return product;
   }
 
   async updateProduct(id: number, dto: UpdateProductDto) {
@@ -218,7 +206,7 @@ export class ProductService {
       });
 
       if (!existingProduct) {
-        throw new NotFoundException('상품을 찾을 수 없습니다.');
+        throw new ApiException(ErrorCode.PRODUCT_NOT_FOUND);
       }
 
       const existingImageUrls = existingProduct.images.map((img) => img.url);
@@ -241,10 +229,8 @@ export class ProductService {
         try {
           await fs.promises.unlink(imagePath);
         } catch (error) {
-          console.error(`이미지 삭제 실패: ${imagePath}`, error);
-          throw new InternalServerErrorException(
-            '이미지 파일 삭제 중 오류가 발생했습니다.',
-          );
+          // console.error(`이미지 삭제 실패: ${imagePath}`, error);
+          throw new ApiException(ErrorCode.IMAGE_FILES_MOVE_ERROR);
         }
 
         await prisma.image.deleteMany({
@@ -274,10 +260,8 @@ export class ProductService {
             `${process.env.SERVER_URL}/uploads/images/${slug}/${newImageFilename}`,
           );
         } catch (error) {
-          console.error(`이미지 이동 실패: ${imageTempPath}`, error);
-          throw new InternalServerErrorException(
-            '이미지 파일 이동 중 오류가 발생했습니다.',
-          );
+          // console.error(`이미지 이동 실패: ${imageTempPath}`, error);
+          throw new ApiException(ErrorCode.IMAGE_FILES_MOVE_ERROR);
         }
       }
 
@@ -312,11 +296,7 @@ export class ProductService {
         });
       }
 
-      return {
-        status: 200,
-        message: '상품이 성공적으로 업데이트되었습니다.',
-        payload: updatedProduct,
-      };
+      return updatedProduct;
     });
   }
 
@@ -332,7 +312,7 @@ export class ProductService {
       });
 
       if (products.length === 0) {
-        throw new NotFoundException('삭제할 상품을 찾을 수 없습니다.');
+        throw new ApiException(ErrorCode.PRODUCT_NOT_FOUND);
       }
 
       await prisma.image.deleteMany({
@@ -353,11 +333,7 @@ export class ProductService {
 
       await this.deleteAssetContents(products);
 
-      return {
-        status: 200,
-        message: '상품이 성공적으로 삭제되었습니다.',
-        payload: null,
-      };
+      return null;
     });
   }
 
@@ -368,7 +344,7 @@ export class ProductService {
         include: { images: true },
       });
       if (!product) {
-        throw new NotFoundException('상품을 찾을 수 없습니다.');
+        throw new ApiException(ErrorCode.PRODUCT_NOT_FOUND);
       }
 
       await prisma.image.deleteMany({
@@ -381,11 +357,7 @@ export class ProductService {
 
       await this.deleteAssetContents([product]);
 
-      return {
-        status: 200,
-        message: '상품이 성공적으로 삭제되었습니다.',
-        payload: null,
-      };
+      return null;
     });
   }
 
@@ -395,13 +367,11 @@ export class ProductService {
       try {
         if (fs.existsSync(slugDir)) {
           await fs.promises.rmdir(slugDir, { recursive: true });
-          console.log(`폴더 삭제 성공: ${slugDir}`);
+          // console.log(`폴더 삭제 성공: ${slugDir}`);
         }
       } catch (error) {
-        console.error(`폴더 삭제 실패: ${slugDir}`, error);
-        throw new InternalServerErrorException(
-          '이미지 폴더 삭제 중 오류가 발생했습니다.',
-        );
+        // console.error(`폴더 삭제 실패: ${slugDir}`, error);
+        throw new ApiException(ErrorCode.IMAGE_FILES_MOVE_ERROR);
       }
 
       const imageUrlsInDescription = this.extractImageUrls(product.description);
@@ -418,13 +388,11 @@ export class ProductService {
               await fs.promises.rmdir(descriptionSlugDir, {
                 recursive: true,
               });
-              console.log(`폴더 삭제 성공: ${descriptionSlugDir}`);
+              // console.log(`폴더 삭제 성공: ${descriptionSlugDir}`);
             }
           } catch (error) {
-            console.error(`폴더 삭제 실패: ${descriptionSlugDir}`, error);
-            throw new InternalServerErrorException(
-              '설명 이미지 폴더 삭제 중 오류가 발생했습니다.',
-            );
+            // console.error(`폴더 삭제 실패: ${descriptionSlugDir}`, error);
+            throw new ApiException(ErrorCode.IMAGE_FILES_MOVE_ERROR);
           }
         }
       }

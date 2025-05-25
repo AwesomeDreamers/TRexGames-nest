@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { ErrorCode } from 'src/common/enum/error-code.enum';
+import { ApiException } from 'src/common/error/api.exception';
 
 @Injectable()
 export class RefreshJwtGuard implements CanActivate {
@@ -19,10 +21,10 @@ export class RefreshJwtGuard implements CanActivate {
         secret: process.env.JWT_REFRESH_TOKEN_KEY,
       });
       request['user'] = payload;
+      return true;
     } catch (error) {
-      throw new UnauthorizedException();
+      throw new ApiException(ErrorCode.INVALID_TOKEN);
     }
-    return true;
   }
 
   private extractTokenFromHeader(request: Request) {

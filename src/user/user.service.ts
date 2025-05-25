@@ -1,5 +1,7 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { compareSync, hashSync } from 'bcrypt';
+import { ErrorCode } from 'src/common/enum/error-code.enum';
+import { ApiException } from 'src/common/error/api.exception';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RedisService } from 'src/redis/redis.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -34,7 +36,7 @@ export class UserService {
       where: { email },
     });
     if (user && compareSync(password, user.password)) {
-      throw new ConflictException('기존 비밀번호와 같습니다.');
+      throw new ApiException(ErrorCode.SAME_ORIGINAL_PASSWORD);
     }
 
     await this.prisma.user.update({
@@ -45,10 +47,7 @@ export class UserService {
         password: await hashSync(password, 10),
       },
     });
-    await this.redis.deleteData(token);
-    return {
-      message: '비밀번호가 변경되었습니다.',
-    };
+    return await this.redis.deleteData(token);
   }
 
   async findByEmail(email: string) {
@@ -56,8 +55,71 @@ export class UserService {
       where: { email },
     });
     if (!user) {
-      throw new ConflictException('해당 유저가 존재하지 않습니다.');
+      throw new ApiException(ErrorCode.USER_NOT_FOUND);
     }
     return user;
+  }
+
+  async findUsersAll(name: string) {
+    const where: any = {};
+    if (name) {
+      where.name = {
+        contains: name,
+        mode: 'insensitive',
+      };
+    }
+
+    const users = await this.prisma.user.findMany(where);
+
+    return users;
+  }
+
+  async findUserByUserId(userId: string) {
+    if (!userId) {
+      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    const { password, ...rest } = user;
+
+    return { status: 200, message: null, payload: { rest } };
+  }
+
+  async updateUser(dto: UpdateUserDto, userId: string) {
+    const { name, image } = dto;
+    if (!userId) {
+      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
+    }
+
+    const upadteUser = await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+
+      data: {
+        name,
+        image,
+      },
+    });
+
+    return upadteUser;
+  }
+
+  async deleteUser(userId: string) {
+    if (!userId) {
+      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
+    }
+
+    await this.prisma.user.delete({
+      where: {
+        id: userId,
+      },
+    });
+    return null;
   }
 }

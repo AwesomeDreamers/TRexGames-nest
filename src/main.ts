@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ApiInterceptor } from './common/api/api.interceptor';
 import { HttpExceptionFilter } from './common/filter/http-exception.filter';
 import { winstonLogger } from './common/utils/winston.config';
 
@@ -18,7 +19,9 @@ async function bootstrap() {
       },
     }),
   );
+  const reflector = app.get(Reflector);
   app.useGlobalFilters(new HttpExceptionFilter(logger));
+  app.useGlobalInterceptors(new ApiInterceptor(reflector));
   await app.listen(process.env.PORT);
 }
 bootstrap();

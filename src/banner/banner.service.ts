@@ -1,11 +1,9 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Banner } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ErrorCode } from 'src/common/enum/error-code.enum';
+import { ApiException } from 'src/common/error/api.exception';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateBannerDto } from './dto/create-banner.dto';
 import { FilterBannertDto } from './dto/fitlter-banner.dto';
@@ -13,7 +11,7 @@ import { FilterBannertDto } from './dto/fitlter-banner.dto';
 @Injectable()
 export class BannerService {
   constructor(private readonly prisma: PrismaService) {}
-  async create(dto: CreateBannerDto) {
+  async createBanner(dto: CreateBannerDto) {
     const { url, images, title, price } = dto;
     return this.prisma.$transaction(async (prisma) => {
       const banner = await prisma.banner.create({
@@ -31,7 +29,7 @@ export class BannerService {
 
       if (!fs.existsSync(bannerDir)) {
         await fs.promises.mkdir(bannerDir, { recursive: true });
-        console.log(`폴더 생성: ${bannerDir}`);
+        // console.log(`폴더 생성: ${bannerDir}`);
       }
 
       for (const imageUrl of images) {
@@ -51,9 +49,7 @@ export class BannerService {
           );
         } catch (error) {
           console.error(`이미지 이동 실패: ${imageTempPath}`, error);
-          throw new InternalServerErrorException(
-            '이미지 파일 이동 중 오류가 발생했습니다.',
-          );
+          throw new ApiException(ErrorCode.BANNER_FILES_MOVE_ERROR);
         }
       }
 
@@ -72,11 +68,7 @@ export class BannerService {
         data: movedImages.map((url) => ({ url, bannerId })),
       });
 
-      return {
-        status: 201,
-        message: '배너가 성공적으로 등록되었습니다.',
-        payload: null,
-      };
+      return null;
     });
   }
 
@@ -107,21 +99,17 @@ export class BannerService {
       this.prisma.banner.count({ where }),
     ]);
 
-    return {
-      status: 200,
-      message: null,
-      payload: { banners, totalCount },
-    };
+    return { banners, totalCount };
   }
 
-  async delete(id: string) {
+  async deleteBanner(id: string) {
     return await this.prisma.$transaction(async (prisma) => {
       const banner = await prisma.banner.findUnique({
         where: { id },
         include: { images: true },
       });
       if (!banner) {
-        throw new NotFoundException('배너를 찾을 수 없습니다.');
+        throw new ApiException(ErrorCode.BANNER_NOT_FOUND);
       }
 
       await prisma.image.deleteMany({
@@ -134,22 +122,18 @@ export class BannerService {
 
       await this.deleteAssetBanners([banner]);
 
-      return {
-        status: 200,
-        message: '배너가 성공적으로 삭제되었습니다.',
-        payload: null,
-      };
+      return null;
     });
   }
 
-  async deleteMany(ids: string[]) {
+  async deleteManyBanners(ids: string[]) {
     return await this.prisma.$transaction(async (prisma) => {
       const banners = await prisma.banner.findMany({
         where: { id: { in: ids } },
         include: { images: true },
       });
       if (banners.length === 0) {
-        throw new NotFoundException('배너를 찾을 수 없습니다.');
+        throw new ApiException(ErrorCode.BANNER_NOT_FOUND);
       }
 
       await prisma.image.deleteMany({
@@ -170,11 +154,7 @@ export class BannerService {
 
       await this.deleteAssetBanners(banners);
 
-      return {
-        status: 200,
-        message: '배너가 성공적으로 삭제되었습니다.',
-        payload: null,
-      };
+      return null;
     });
   }
 
@@ -192,9 +172,7 @@ export class BannerService {
         }
       } catch (error) {
         console.error(`폴더 삭제 실패: ${bannerDir}`, error);
-        throw new InternalServerErrorException(
-          '이미지 폴더 삭제 중 오류가 발생했습니다.',
-        );
+        throw new ApiException(ErrorCode.BANNER_FILES_MOVE_ERROR);
       }
     }
   }

@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { Public } from 'src/auth/decorator/public.decorator';
 import { CurrentUser } from 'src/common/decorator/current-user.decorator';
+import { Message } from 'src/common/decorator/message.decorator';
+import { ResponseMessage } from 'src/common/enum/response-message.enum';
 import { Payload } from 'src/common/utils/type';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { FilterReviewDto } from './dto/filter-review-dto';
@@ -21,8 +23,9 @@ export class ReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
   @Post('create')
-  create(@Body() dto: CreateReviewDto, @CurrentUser() user: Payload) {
-    return this.reviewService.create(dto, user.id);
+  @Message(ResponseMessage.CREATE_REVIEW_SUCCESS)
+  createReview(@Body() dto: CreateReviewDto, @CurrentUser() user: Payload) {
+    return this.reviewService.createReview(dto, user.id);
   }
 
   @Get('user-id/product-id/:productId')
@@ -46,8 +49,8 @@ export class ReviewController {
   }
 
   @Get()
-  findAll() {
-    return this.reviewService.findAll();
+  findReviewsAll() {
+    return this.reviewService.findReviewsAll();
   }
 
   @Get(':id')
@@ -56,16 +59,18 @@ export class ReviewController {
   }
 
   @Put('update/:id')
-  update(
+  @Message(ResponseMessage.UPDATE_REVIEW_SUCCESS)
+  updateReview(
     @Param('id') id: string,
     @Body() dto: UpdateReviewDto,
     @CurrentUser() user: Payload,
   ) {
-    return this.reviewService.update(id, dto, user.id);
+    return this.reviewService.updateReview(id, dto, user.id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.reviewService.remove(+id);
+  @Message(ResponseMessage.DELETE_REVIEW_SUCCESS)
+  deleteReview(@Param('id') id: string) {
+    return this.reviewService.deleteReview(+id);
   }
 }

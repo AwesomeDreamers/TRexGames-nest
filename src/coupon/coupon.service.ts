@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ErrorCode } from 'src/common/enum/error-code.enum';
+import { ApiException } from 'src/common/error/api.exception';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 
@@ -6,7 +8,7 @@ import { CreateCouponDto } from './dto/create-coupon.dto';
 export class CouponService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateCouponDto) {
+  async createCoupon(dto: CreateCouponDto) {
     const { code, discount, startDate, endDate, usageLimit } = dto;
     const coupon = await this.prisma.coupon.create({
       data: {
@@ -18,34 +20,30 @@ export class CouponService {
         usageCount: 0,
       },
     });
-    return { status: 201, message: '쿠폰이 생성되었습니다.', payload: coupon };
+    return coupon;
   }
 
-  async findAll() {
+  async findCouponsAll() {
     const coupons = await this.prisma.coupon.findMany({
       orderBy: { createdAt: 'asc' },
     });
-    return { status: 200, message: null, payload: coupons };
+    return coupons;
   }
 
-  async delete(id: string) {
+  async deleteCoupon(id: string) {
     const coupon = await this.prisma.coupon.findUnique({
       where: { id },
     });
     if (!coupon) {
-      throw new NotFoundException('쿠폰을 찾을 수 없습니다.');
+      throw new ApiException(ErrorCode.COUPON_NOT_FOUND);
     }
     await this.prisma.coupon.delete({
       where: { id },
     });
-    return {
-      status: 200,
-      message: '쿠폰이 성공적으로 삭제되었습니다.',
-      payload: null,
-    };
+    return null;
   }
 
-  async deletes(ids: string[]) {
+  async deleteManyCoupons(ids: string[]) {
     const coupons = await this.prisma.coupon.findMany({
       where: {
         id: {
@@ -55,7 +53,7 @@ export class CouponService {
     });
 
     if (coupons.length === 0) {
-      throw new NotFoundException('삭제할 쿠폰을 찾을 수 없습니다.');
+      throw new ApiException(ErrorCode.COUPON_NOT_FOUND);
     }
 
     await this.prisma.coupon.deleteMany({
@@ -66,10 +64,6 @@ export class CouponService {
       },
     });
 
-    return {
-      status: 200,
-      message: '쿠폰이 성공적으로 삭제되었습니다.',
-      payload: null,
-    };
+    return null;
   }
 }

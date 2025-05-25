@@ -1,10 +1,8 @@
 import Mail = require('nodemailer/lib/mailer');
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { ErrorCode } from 'src/common/enum/error-code.enum';
+import { ApiException } from 'src/common/error/api.exception';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RedisService } from 'src/redis/redis.service';
 import * as uuid from 'uuid';
@@ -38,13 +36,11 @@ export class EmailService {
     });
 
     if (type === 'signup' && user) {
-      throw new ConflictException('이미 존재하는 이메일 입니다.');
+      throw new ApiException(ErrorCode.DUPLICATE_EMAIL);
     } else if (type === 'reset' && !user) {
-      throw new NotFoundException('존재하지 않는 이메일 입니다.');
+      throw new ApiException(ErrorCode.NOT_FOUND_EMAIL);
     } else if (type === 'reset' && user.provider !== 'credentials') {
-      throw new ConflictException(
-        '소셜 로그인 유저는 비밀번호 찾기를 이용할 수 없습니다.',
-      );
+      throw new ApiException(ErrorCode.NOT_ALLOWED_SOCIAL_USER);
     }
 
     const token = uuid.v4();
@@ -56,9 +52,7 @@ export class EmailService {
 
     await this.transporter.sendMail(mailOptions);
 
-    return {
-      message: '이메일을 성공적으로 보냈습니다. 링크를 통해 진행해주세요.',
-    };
+    return null;
   }
 
   private generateUrl(type: 'signup' | 'reset', token: string): string {

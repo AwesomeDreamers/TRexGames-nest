@@ -7,6 +7,8 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
+import { Message } from 'src/common/decorator/message.decorator';
+import { ResponseMessage } from 'src/common/enum/response-message.enum';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PaymentApproveDto } from './dto/payment-approve.dto';
 import { PaymentService } from './payment.service';
@@ -16,13 +18,9 @@ export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
   @Post('create')
-  create(@Body() dto: CreatePaymentDto) {
-    return this.paymentService.create(dto);
-  }
-
-  @Get('all')
-  findAll() {
-    return this.paymentService.findAll();
+  @Message(ResponseMessage.CREATE_PAYMENT_SUCCESS)
+  createPayment(@Body() dto: CreatePaymentDto) {
+    return this.paymentService.createPayment(dto);
   }
 
   @Get(':orderId')
@@ -31,6 +29,7 @@ export class PaymentController {
   }
 
   @Put('update')
+  @Message(ResponseMessage.CREATE_PAYMENT_SUCCESS)
   update(@Body() dto: PaymentApproveDto) {
     return this.paymentService.update(dto);
   }

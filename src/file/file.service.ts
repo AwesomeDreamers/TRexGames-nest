@@ -1,13 +1,15 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ErrorCode } from 'src/common/enum/error-code.enum';
+import { ApiException } from 'src/common/error/api.exception';
 import { ContentsDto } from './dto/contents.dto';
 
 @Injectable()
 export class FileService {
   uploadImage(image: Express.Multer.File) {
     if (!image) {
-      throw new BadRequestException('이미지를 업로드 해주세요.');
+      throw new ApiException(ErrorCode.IMAGE_NOT_FOUND);
     }
     const fileUrl = `${process.env.SERVER_URL}/uploads/temp/${image.filename}`;
     return fileUrl;
@@ -18,7 +20,6 @@ export class FileService {
     const imageUrls = [];
     const contentsDir = path.join(process.cwd(), 'uploads/contents', slug);
 
-    // slug 폴더가 없으면 생성
     if (!fs.existsSync(contentsDir)) {
       await fs.promises.mkdir(contentsDir, { recursive: true });
       console.log(`폴더 생성: ${contentsDir}`);
@@ -58,7 +59,7 @@ export class FileService {
           console.error(
             `이미지 파일 이동 중 오류가 발생했습니다: ${error.message}`,
           );
-          throw new Error('이미지 파일 이동 중 오류가 발생했습니다.');
+          throw new ApiException(ErrorCode.IMAGE_FILES_MOVE_ERROR);
         }
       } else {
         console.warn(`알 수 없는 경로의 이미지 URL: ${url}`);

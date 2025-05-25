@@ -1,9 +1,7 @@
 import { HttpService } from '@nestjs/axios';
-import {
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ErrorCode } from 'src/common/enum/error-code.enum';
+import { ApiException } from 'src/common/error/api.exception';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
@@ -16,7 +14,7 @@ export class OrderService {
 
   async createOrder(dto: CreateOrderDto, userId: string) {
     if (!userId) {
-      throw new UnauthorizedException('로그인이 필요합니다.');
+      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
     }
 
     const { items, total, couponId, orderName } = dto;
@@ -71,12 +69,12 @@ export class OrderService {
       },
     });
 
-    return { status: 200, message: '주문이 완료되었습니다.', payload: order };
+    return order;
   }
 
   async findOrderByOrderId(orderId: string, userId: string) {
     if (!userId) {
-      throw new UnauthorizedException('로그인이 필요합니다.');
+      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
     }
 
     const order = await this.prisma.order.findFirst({
@@ -91,7 +89,7 @@ export class OrderService {
     });
 
     if (!order) {
-      throw new NotFoundException('주문 내역이 없습니다.');
+      throw new ApiException(ErrorCode.ORDER_NOT_FOUND);
     }
     return { status: 200, message: null, payload: order };
   }
@@ -99,7 +97,7 @@ export class OrderService {
   async findOrdersAllForAdmin(id: string) {
     const userId = Number(id);
     if (!userId) {
-      throw new UnauthorizedException('로그인이 필요합니다.');
+      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
     }
 
     const orders = await this.prisma.order.findMany({
@@ -115,12 +113,12 @@ export class OrderService {
       },
     });
 
-    return { status: 200, message: null, payload: orders };
+    return orders;
   }
 
   async findOrderByUserId(userId: string) {
     if (!userId) {
-      throw new UnauthorizedException('로그인이 필요합니다.');
+      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
     }
 
     const orders = await this.prisma.order.findMany({
@@ -136,7 +134,7 @@ export class OrderService {
       },
     });
 
-    return { status: 200, message: null, payload: orders };
+    return orders;
   }
 
   private generateGameKey() {

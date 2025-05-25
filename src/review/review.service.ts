@@ -3,6 +3,8 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ErrorCode } from 'src/common/enum/error-code.enum';
+import { ApiException } from 'src/common/error/api.exception';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { FilterReviewDto } from './dto/filter-review-dto';
@@ -12,11 +14,11 @@ import { UpdateReviewDto } from './dto/update-review.dto';
 export class ReviewService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateReviewDto, userId: string) {
+  async createReview(dto: CreateReviewDto, userId: string) {
     return this.prisma.$transaction(async (prisma) => {
       const { title, content, productId, rating } = dto;
 
-      if (!userId) throw new UnauthorizedException('로그인이 필요합니다.');
+      if (!userId) throw new ApiException(ErrorCode.REQUIRED_LOGIN);
 
       const review = await prisma.review.create({
         data: {
@@ -53,11 +55,7 @@ export class ReviewService {
         },
       });
 
-      return {
-        status: 201,
-        message: '리뷰가 등록되었습니다.',
-        payload: review,
-      };
+      return review;
     });
   }
 
@@ -84,7 +82,7 @@ export class ReviewService {
     return { status: 200, message: null, payload: review };
   }
 
-  async update(id: string, dto: UpdateReviewDto, userId: string) {
+  async updateReview(id: string, dto: UpdateReviewDto, userId: string) {
     const { title, content, productId, rating } = dto;
     return await this.prisma.$transaction(async (prisma) => {
       if (!userId) throw new UnauthorizedException('로그인이 필요합니다.');
@@ -169,7 +167,7 @@ export class ReviewService {
     };
   }
 
-  findAll() {
+  findReviewsAll() {
     return `This action returns all review`;
   }
 
@@ -177,7 +175,7 @@ export class ReviewService {
     return `This action returns a #${id} review`;
   }
 
-  remove(id: number) {
+  deleteReview(id: number) {
     return `This action removes a #${id} review`;
   }
 }

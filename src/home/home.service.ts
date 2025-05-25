@@ -16,7 +16,7 @@ export class HomeService {
       },
       take: 8,
     });
-    return { status: 200, message: null, payload: products };
+    return products;
   }
 
   async findPopularProductsAll() {
@@ -31,7 +31,7 @@ export class HomeService {
       },
       take: 8,
     });
-    return { status: 200, message: null, payload: products };
+    return products;
   }
 
   async findSwiperBannersAll() {
@@ -48,6 +48,6 @@ export class HomeService {
       },
       take: 6,
     });
-    return { status: 200, message: null, payload: banners };
+    return banners;
   }
 }

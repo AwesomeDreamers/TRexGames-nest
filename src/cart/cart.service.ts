@@ -1,9 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ErrorCode } from 'src/common/enum/error-code.enum';
+import { ApiException } from 'src/common/error/api.exception';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCartDto } from './dto/create-cart.dto';
 import { UpdateCartDto } from './dto/update-cart.dto';
@@ -12,11 +9,11 @@ import { UpdateCartDto } from './dto/update-cart.dto';
 export class CartService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateCartDto, userId: string) {
-    const { productId, quantity } = dto;
+  async createCart(dto: CreateCartDto, userId: string) {
+    const { productId } = dto;
 
     if (!userId) {
-      throw new UnauthorizedException('로그인이 필요합니다.');
+      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
     }
 
     const product = await this.prisma.product.findUnique({
@@ -35,7 +32,7 @@ export class CartService {
     });
 
     if (!product) {
-      throw new NotFoundException('상품을 찾을 수 없습니다.');
+      throw new ApiException(ErrorCode.PRODUCT_NOT_FOUND);
     }
 
     const cart = await this.prisma.cart.upsert({
@@ -68,7 +65,6 @@ export class CartService {
         },
       });
       return {
-        status: 200,
         message: '장바구니에 이미 담긴 상품입니다.',
         payload: {
           id: cartItem.id,
@@ -102,7 +98,6 @@ export class CartService {
     });
 
     return {
-      status: 201,
       message: '장바구니에 담겼습니다.',
       payload: {
         id: cartItem.id,
@@ -118,7 +113,7 @@ export class CartService {
 
   async findAll(userId: string) {
     if (!userId) {
-      throw new UnauthorizedException('로그인이 필요합니다.');
+      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
     }
     const cart = await this.prisma.cart.findUnique({
       where: { userId },
@@ -174,7 +169,7 @@ export class CartService {
 
   async count(userId: string) {
     if (!userId) {
-      throw new UnauthorizedException('로그인이 필요합니다.');
+      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
     }
     const count = await this.prisma.cartItem.count({
       where: {
@@ -190,11 +185,11 @@ export class CartService {
     const { productId, quantity } = dto;
 
     if (!userId) {
-      throw new UnauthorizedException('로그인이 필요합니다.');
+      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
     }
 
     if (quantity == null || quantity < 1) {
-      throw new Error('유효하지 않은 수량입니다.');
+      throw new ApiException(ErrorCode.BAD_REQUEST);
     }
 
     const cart = await this.prisma.cart.findUnique({
@@ -203,7 +198,7 @@ export class CartService {
     });
 
     if (!cart) {
-      throw new Error('장바구니가 존재하지 않습니다.');
+      throw new ApiException(ErrorCode.CART_NOT_FOUND);
     }
 
     const cartItem = await this.prisma.cartItem.findUnique({
@@ -216,7 +211,7 @@ export class CartService {
     });
 
     if (!cartItem) {
-      throw new Error('해당 상품이 장바구니에 없습니다.');
+      throw new ApiException(ErrorCode.CART_ITEM_NOT_FOUND);
     }
     const updatedCartItem = await this.prisma.cartItem.update({
       where: {
@@ -230,18 +225,14 @@ export class CartService {
       },
     });
 
-    return {
-      status: 200,
-      message: '장바구니가 업데이트되었습니다.',
-      payload: updatedCartItem,
-    };
+    return updatedCartItem;
   }
 
   async delete(dto: UpdateCartDto, userId: string) {
     const { productId } = dto;
 
     if (!userId) {
-      throw new UnauthorizedException('로그인이 필요합니다.');
+      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
     }
 
     const cart = await this.prisma.cart.findUnique({
@@ -250,7 +241,7 @@ export class CartService {
     });
 
     if (!cart) {
-      throw new NotFoundException('장바구니가 존재하지 않습니다.');
+      throw new ApiException(ErrorCode.CART_NOT_FOUND);
     }
 
     const cartItem = await this.prisma.cartItem.findUnique({
@@ -263,7 +254,7 @@ export class CartService {
     });
 
     if (!cartItem) {
-      throw new BadRequestException('해당 상품이 장바구니에 없습니다.');
+      throw new ApiException(ErrorCode.CART_ITEM_NOT_FOUND);
     }
 
     const deletedCartItem = await this.prisma.cartItem.delete({
@@ -275,10 +266,6 @@ export class CartService {
       },
     });
 
-    return {
-      status: 200,
-      message: '장바구니에서 삭제되었습니다.',
-      payload: deletedCartItem,
-    };
+    return deletedCartItem;
   }
 }

@@ -6,7 +6,8 @@ import { PaymentApproveDto } from './dto/payment-approve.dto';
 @Injectable()
 export class PaymentService {
   constructor(private readonly prisma: PrismaService) {}
-  async create(dto: CreatePaymentDto) {
+
+  async createPayment(dto: CreatePaymentDto) {
     const { orderId, amount, status, orderName } = dto;
 
     const payment = await this.prisma.payment.create({
@@ -18,11 +19,7 @@ export class PaymentService {
       },
     });
 
-    return { status: 201, message: '결제가 완료되었습니다.', payload: payment };
-  }
-
-  findAll() {
-    return `This action returns all payment`;
+    return payment;
   }
 
   async findPaymentByOrderId(orderId: string) {
@@ -31,7 +28,7 @@ export class PaymentService {
         orderId,
       },
     });
-    return { status: 200, message: null, payload: payment };
+    return payment;
   }
 
   async update(dto: PaymentApproveDto) {

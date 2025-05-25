@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { CurrentUser } from 'src/common/decorator/current-user.decorator';
+import { Message } from 'src/common/decorator/message.decorator';
+import { ResponseMessage } from 'src/common/enum/response-message.enum';
 import { Payload } from 'src/common/utils/type';
 import { EmailService } from 'src/email/email.service';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
@@ -20,18 +22,21 @@ export class AuthController {
 
   @Public()
   @Post('signup')
+  @Message(ResponseMessage.SIGNUP_SUCCESS)
   async signup(@Body() dto: CreateUserDto) {
     return await this.userService.signup(dto);
   }
 
   @Public()
   @Post('reset-password')
+  @Message(ResponseMessage.RESET_PASSWORD_SUCCESS)
   async resetPassword(@Body() dto: UpdateUserDto) {
     return await this.userService.resetPassword(dto);
   }
 
   @Public()
   @Post('login')
+  @Message(ResponseMessage.LOGIN_SUCCESS)
   async login(@Body() dto: LoginDto) {
     return await this.authService.login(dto);
   }
@@ -44,32 +49,30 @@ export class AuthController {
 
   @Public()
   @Post('send-signup-email')
+  @Message(ResponseMessage.LOGIN_SUCCESS)
   async sendSignupEmail(@Body('email') email: string) {
     return await this.emailService.sendVerificationMail(email, 'signup');
   }
 
   @Public()
   @Post('send-reset-password-email')
+  @Message(ResponseMessage.SEND_EMAIL_SUCCESS)
   async sendResetPasswordEmail(@Body('email') email: string) {
     return await this.emailService.sendVerificationMail(email, 'reset');
   }
 
   @Public()
   @UseGuards(RefreshJwtGuard)
-  @Get('refresh')
+  @Post('refresh')
   async refresh(@CurrentUser() user: Payload) {
     return await this.authService.refreshToken(user);
   }
 
   @Public()
-  @Post('kakao-login')
-  async kakaoLogin(@Body() dto: CreateUserDto) {
-    return await this.authService.kakaoLogin(dto);
-  }
-
-  @Public()
-  @Post('google-login')
-  async googleLogin(@Body() dto: CreateUserDto) {
-    return await this.authService.googleLogin(dto);
+  @Post('social-login')
+  @Message(ResponseMessage.LOGIN_SUCCESS)
+  async socialLogin(@Body() dto: CreateUserDto) {
+    console.log('dto', dto);
+    return await this.authService.socialLogin(dto);
   }
 }

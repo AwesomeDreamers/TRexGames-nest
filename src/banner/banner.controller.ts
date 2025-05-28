@@ -7,6 +7,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { Roles } from 'src/auth/decorator/role.decorator';
 import { Message } from 'src/common/decorator/message.decorator';
 import { ResponseMessage } from 'src/common/enum/response-message.enum';
 import { BannerService } from './banner.service';
@@ -23,6 +24,7 @@ export class BannerController {
     return this.bannerService.createBanner(dto);
   }
 
+  @Roles('ADMIN')
   @Get('all')
   findBannersAll(@Query() dto: FilterBannertDto) {
     return this.bannerService.findBannersAll(dto);

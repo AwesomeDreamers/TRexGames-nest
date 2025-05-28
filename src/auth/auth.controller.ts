@@ -49,7 +49,7 @@ export class AuthController {
 
   @Public()
   @Post('send-signup-email')
-  @Message(ResponseMessage.LOGIN_SUCCESS)
+  @Message(ResponseMessage.SEND_EMAIL_SUCCESS)
   async sendSignupEmail(@Body('email') email: string) {
     return await this.emailService.sendVerificationMail(email, 'signup');
   }

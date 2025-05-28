@@ -8,6 +8,7 @@ import { ApiException } from 'src/common/error/api.exception';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RedisService } from 'src/redis/redis.service';
 import { CreateUserDto } from './dto/create-user.dto';
+import { FilterUserDto } from './dto/fitlter-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
@@ -63,7 +64,8 @@ export class UserService {
     return user;
   }
 
-  async findUsersAll(name: string) {
+  async findUsersAll(dto: FilterUserDto) {
+    const { name, page, take } = dto;
     const where: any = {};
     if (name) {
       where.name = {
@@ -71,17 +73,24 @@ export class UserService {
         mode: 'insensitive',
       };
     }
+    const skip = (page - 1) * take;
 
-    const users = await this.prisma.user.findMany(where);
+    const [users, totalCount] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        take,
+        skip,
+      }),
+      this.prisma.user.count({ where }),
+    ]);
 
-    return users;
+    return {
+      users,
+      totalCount,
+    };
   }
 
   async findUserByUserId(userId: string) {
-    if (!userId) {
-      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
-    }
-
     const user = await this.prisma.user.findUnique({
       where: {
         id: userId,
@@ -91,6 +100,82 @@ export class UserService {
     const { password, ...rest } = user;
 
     return rest;
+  }
+
+  async editUser(dto: UpdateUserDto, userId: string) {
+    const { name, image, role } = dto;
+    return this.prisma.$transaction(async (prisma) => {
+      const updateUser = await prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          name,
+          role,
+        },
+      });
+
+      if (
+        !image ||
+        image === updateUser.image ||
+        !image.includes('/uploads/temp/')
+      ) {
+        return null;
+      }
+
+      if (updateUser.image && updateUser.image !== image) {
+        try {
+          const oldImagePath = updateUser.image.replace(
+            `${process.env.SERVER_URL}/`,
+            '',
+          );
+          const oldImageFullPath = path.join(process.cwd(), oldImagePath);
+          if (fs.existsSync(oldImageFullPath)) {
+            await fs.promises.unlink(oldImageFullPath);
+          }
+        } catch (error) {
+          throw new ApiException(ErrorCode.IMAGE_FILES_MOVE_ERROR);
+        }
+      }
+
+      const updateUserId = updateUser.id;
+      const userDir = path.join(process.cwd(), 'uploads/users', updateUserId);
+      if (!fs.existsSync(userDir)) {
+        fs.mkdirSync(userDir, { recursive: true });
+      }
+
+      const imageFilename = path.basename(image);
+      const ext = path.extname(imageFilename);
+      const newImageFilename = `${updateUser.name}_${Date.now()}${ext}`;
+      const imageTempPath = path.join(
+        process.cwd(),
+        'uploads/temp',
+        imageFilename,
+      );
+
+      const imageFinalPath = path.join(userDir, newImageFilename);
+
+      if (!fs.existsSync(imageTempPath)) {
+        return null;
+      }
+
+      try {
+        await fs.promises.rename(imageTempPath, imageFinalPath);
+        const userImagePath = `${process.env.SERVER_URL}/uploads/users/${updateUserId}/${newImageFilename}`;
+        const newUser = await prisma.user.update({
+          where: {
+            id: userId,
+          },
+          data: {
+            image: userImagePath,
+          },
+        });
+        return newUser;
+      } catch (error) {
+        // console.error(`이미지 이동 실패: ${imageTempPath}`, error);
+        throw new ApiException(ErrorCode.IMAGE_FILES_MOVE_ERROR);
+      }
+    });
   }
 
   async updateUser(dto: UpdateUserDto, userId: string) {
@@ -218,7 +303,7 @@ export class UserService {
             id: userId,
           },
         });
-        await this.deleteAssetBanners(user);
+        await this.deleteAssetUsers(user);
         return null;
       } catch (error) {
         throw new ApiException(ErrorCode.DELETE_USER_FAILED);
@@ -226,7 +311,37 @@ export class UserService {
     });
   }
 
-  private async deleteAssetBanners(user: User) {
+  async deleteManyUserByUserId(userIds: string[]) {
+    return await this.prisma.$transaction(async (prisma) => {
+      const users = await prisma.user.findMany({
+        where: {
+          id: {
+            in: userIds,
+          },
+        },
+      });
+
+      if (users.length === 0) {
+        throw new ApiException(ErrorCode.USER_NOT_FOUND);
+      }
+
+      await prisma.user.deleteMany({
+        where: {
+          id: {
+            in: userIds,
+          },
+        },
+      });
+
+      for (const user of users) {
+        await this.deleteAssetUsers(user);
+      }
+
+      return null;
+    });
+  }
+
+  private async deleteAssetUsers(user: User) {
     const userDir = path.join(process.cwd(), 'uploads/users', user.id);
     try {
       if (fs.existsSync(userDir)) {

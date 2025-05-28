@@ -1,9 +1,18 @@
-import { Body, Controller, Delete, Get, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { Roles } from 'src/auth/decorator/role.decorator';
 import { CurrentUser } from 'src/common/decorator/current-user.decorator';
 import { Message } from 'src/common/decorator/message.decorator';
 import { ResponseMessage } from 'src/common/enum/response-message.enum';
 import { Payload } from 'src/common/utils/type';
+import { FilterUserDto } from './dto/fitlter-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserService } from './user.service';
 
@@ -13,13 +22,37 @@ export class UserController {
 
   @Roles('ADMIN')
   @Get('all')
-  async findUsersAll(@Query('name') name: string) {
-    return await this.userService.findUsersAll(name);
+  async findUsersAll(@Query() dto: FilterUserDto) {
+    return await this.userService.findUsersAll(dto);
   }
 
-  @Get('me')
-  async findUserByUserId(@CurrentUser() user: Payload) {
-    return await this.userService.findUserByUserId(user.id);
+  @Roles('ADMIN')
+  @Get(':userId')
+  async findUserByUserId(@Param('userId') userId: string) {
+    console.log(`Finding user with ID: ${userId}`);
+
+    return await this.userService.findUserByUserId(userId);
+  }
+
+  @Roles('ADMIN')
+  @Message(ResponseMessage.UPDATE_USER_SUCCESS)
+  @Put('edit/:userId')
+  async editUser(@Param('userId') userId: string, @Body() dto: UpdateUserDto) {
+    return await this.userService.editUser(dto, userId);
+  }
+
+  @Roles('ADMIN')
+  @Message(ResponseMessage.DELETE_USER_SUCCESS)
+  @Delete('delete/:userId')
+  async deleteUserByUserId(@Param('userId') userId: string) {
+    return await this.userService.deleteUser(userId);
+  }
+
+  @Roles('ADMIN')
+  @Message(ResponseMessage.DELETE_USER_SUCCESS)
+  @Delete('delete-many')
+  async deleteManyUserByUserId(@Body('userIds') userIds: string[]) {
+    return await this.userService.deleteManyUserByUserId(userIds);
   }
 
   @Message(ResponseMessage.UPDATE_USER_SUCCESS)

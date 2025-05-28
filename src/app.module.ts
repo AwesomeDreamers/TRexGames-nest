@@ -26,6 +26,7 @@ import { OrderModule } from './order/order.module';
 import { PaymentModule } from './payment/payment.module';
 import { ReviewModule } from './review/review.module';
 import { HomeModule } from './home/home.module';
+import { AnalysisModule } from './analysis/analysis.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { HomeModule } from './home/home.module';
     PaymentModule,
     ReviewModule,
     HomeModule,
+    AnalysisModule,
   ],
   controllers: [],
   providers: [

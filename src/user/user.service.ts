@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { User } from '@prisma/client';
 import { compareSync, hashSync } from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
 import { ErrorCode } from 'src/common/enum/error-code.enum';
 import { ApiException } from 'src/common/error/api.exception';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -87,7 +90,7 @@ export class UserService {
 
     const { password, ...rest } = user;
 
-    return { status: 200, message: null, payload: { rest } };
+    return rest;
   }
 
   async updateUser(dto: UpdateUserDto, userId: string) {
@@ -96,18 +99,111 @@ export class UserService {
       throw new ApiException(ErrorCode.REQUIRED_LOGIN);
     }
 
-    const upadteUser = await this.prisma.user.update({
+    return this.prisma.$transaction(async (prisma) => {
+      const updateUser = await prisma.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          name,
+        },
+      });
+
+      if (
+        !image ||
+        image === updateUser.image ||
+        !image.includes('/uploads/temp/')
+      ) {
+        return null;
+      }
+
+      if (updateUser.image && updateUser.image !== image) {
+        try {
+          const oldImagePath = updateUser.image.replace(
+            `${process.env.SERVER_URL}/`,
+            '',
+          );
+          const oldImageFullPath = path.join(process.cwd(), oldImagePath);
+          if (fs.existsSync(oldImageFullPath)) {
+            await fs.promises.unlink(oldImageFullPath);
+          }
+        } catch (error) {
+          throw new ApiException(ErrorCode.IMAGE_FILES_MOVE_ERROR);
+        }
+      }
+
+      const updateUserId = updateUser.id;
+      const userDir = path.join(process.cwd(), 'uploads/users', updateUserId);
+      if (!fs.existsSync(userDir)) {
+        fs.mkdirSync(userDir, { recursive: true });
+      }
+
+      const imageFilename = path.basename(image);
+      const ext = path.extname(imageFilename);
+      const newImageFilename = `${updateUser.name}_${Date.now()}${ext}`;
+      const imageTempPath = path.join(
+        process.cwd(),
+        'uploads/temp',
+        imageFilename,
+      );
+
+      const imageFinalPath = path.join(userDir, newImageFilename);
+
+      if (!fs.existsSync(imageTempPath)) {
+        return null;
+      }
+
+      try {
+        await fs.promises.rename(imageTempPath, imageFinalPath);
+        const userImagePath = `${process.env.SERVER_URL}/uploads/users/${updateUserId}/${newImageFilename}`;
+        const newUser = await prisma.user.update({
+          where: {
+            id: userId,
+          },
+          data: {
+            image: userImagePath,
+          },
+        });
+        return newUser;
+      } catch (error) {
+        // console.error(`이미지 이동 실패: ${imageTempPath}`, error);
+        throw new ApiException(ErrorCode.IMAGE_FILES_MOVE_ERROR);
+      }
+    });
+  }
+
+  async changePassword(dto: UpdateUserDto, userId: string) {
+    const { password, newPassword } = dto;
+    if (!userId) {
+      throw new ApiException(ErrorCode.REQUIRED_LOGIN);
+    }
+
+    const user = await this.prisma.user.findUnique({
       where: {
         id: userId,
       },
+    });
 
+    if (!user || !compareSync(password, user.password)) {
+      throw new ApiException(ErrorCode.PASSWORD_INCORRECT);
+    }
+
+    if (compareSync(newPassword, user.password)) {
+      throw new ApiException(ErrorCode.SAME_ORIGINAL_PASSWORD);
+    }
+
+    const hashedNewPassword = await hashSync(newPassword, 10);
+
+    await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
       data: {
-        name,
-        image,
+        password: hashedNewPassword,
       },
     });
 
-    return upadteUser;
+    return null;
   }
 
   async deleteUser(userId: string) {
@@ -115,11 +211,31 @@ export class UserService {
       throw new ApiException(ErrorCode.REQUIRED_LOGIN);
     }
 
-    await this.prisma.user.delete({
-      where: {
-        id: userId,
-      },
+    return this.prisma.$transaction(async (prisma) => {
+      try {
+        const user = await prisma.user.delete({
+          where: {
+            id: userId,
+          },
+        });
+        await this.deleteAssetBanners(user);
+        return null;
+      } catch (error) {
+        throw new ApiException(ErrorCode.DELETE_USER_FAILED);
+      }
     });
-    return null;
+  }
+
+  private async deleteAssetBanners(user: User) {
+    const userDir = path.join(process.cwd(), 'uploads/users', user.id);
+    try {
+      if (fs.existsSync(userDir)) {
+        await fs.promises.rmdir(userDir, { recursive: true });
+        console.log(`폴더 삭제 성공: ${userDir}`);
+      }
+    } catch (error) {
+      console.error(`폴더 삭제 실패: ${userDir}`, error);
+      throw new ApiException(ErrorCode.IMAGE_FILES_MOVE_ERROR);
+    }
   }
 }

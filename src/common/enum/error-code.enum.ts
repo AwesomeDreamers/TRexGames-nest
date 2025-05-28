@@ -13,6 +13,8 @@ export enum ErrorCode {
   NOT_FOUND_EMAIL = 'USER_003',
   SAME_ORIGINAL_PASSWORD = 'USER_004',
   NOT_ALLOWED_SOCIAL_USER = 'USER_005',
+  PASSWORD_INCORRECT = 'USER_006',
+  DELETE_USER_FAILED = 'USER_007',
 
   // 상품 관련 에러
   PRODUCT_NOT_FOUND = 'PRODUCT_001',
@@ -83,6 +85,14 @@ export const ErrorCodeMap: Record<
   [ErrorCode.SAME_ORIGINAL_PASSWORD]: {
     status: HttpStatus.CONFLICT,
     message: '기존 비밀번호와 동일합니다.',
+  },
+  [ErrorCode.PASSWORD_INCORRECT]: {
+    status: HttpStatus.UNAUTHORIZED,
+    message: '비밀번호가 일치하지 않습니다.',
+  },
+  [ErrorCode.DELETE_USER_FAILED]: {
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    message: '회원 탈퇴에 실패했습니다.',
   },
 
   // 상품 관련

@@ -31,4 +31,9 @@ export enum ResponseMessage {
   CREATE_REVIEW_SUCCESS = '리뷰가 성공적으로 등록되었습니다.',
   UPDATE_REVIEW_SUCCESS = '리뷰가 성공적으로 수정되었습니다.',
   DELETE_REVIEW_SUCCESS = '리뷰가 성공적으로 삭제되었습니다.',
+
+  // 유저 관련
+  UPDATE_USER_SUCCESS = '회원 정보가 성공적으로 수정되었습니다.',
+  DELETE_USER_SUCCESS = '회원 탈퇴가 완료되었습니다.',
+  CHANGE_PASSWORD_SUCCESS = '비밀번호가 성공적으로 변경되었습니다.',
 }

@@ -14,7 +14,6 @@ import { FileService } from './file.service';
 export class FileController {
   constructor(private readonly fileService: FileService) {}
 
-  @Roles('ADMIN')
   @UseInterceptors(FileInterceptor('file'))
   @Post('image')
   async uploadImage(@UploadedFile() image: Express.Multer.File) {
